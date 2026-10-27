@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VJG | Operations Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --red: #c8102e;
+  --border: #334155;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, Arial, sans-serif;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.logo { font-weight: 700; letter-spacing: 0.5px; }
+.logo span { color: var(--red); }
+.lang-btn, .logout-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #111827;
+  flex-wrap: wrap;
+}
+.tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+.content { padding: 24px; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.login-box {
+  max-width: 380px;
+  margin: 80px auto;
+}
+input, select, button.primary {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0f172a;
+  color: var(--text);
+}
+button.primary {
+  background: var(--red);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.dot-available { background: #22c55e; }
+.dot-flying { background: #ef4444; }
+.dot-on_ground { background: #3b82f6; }
+.dot-hangar { background: #16a34a; }
+.dot-maintenance { background: #eab308; }
+.dot-unavailable { background: #6b7280; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="loginView" class="login-box panel">
+    <h2 data-es="Iniciar sesión" data-en="Sign in">Iniciar sesión</h2>
+    <input id="email" type="email" placeholder="Correo">
+    <input id="password" type="password" placeholder="Contraseña">
+    <button class="primary" onclick="login()" data-es="Entrar" data-en="Sign in">Entrar</button>
+    <p id="loginError" style="color:#ef4444; font-size:14px;"></p>
+  </div>
+
+  <div id="mainView" class="hidden">
+    <div class="header">
+      <div class="logo">VISTA<span>JET</span> GROUP</div>
+      <div>
+        <button class="lang-btn" onclick="toggleLang()">ES / EN</button>
+        <button class="logout-btn" onclick="logout()" data-es="Salir" data-en="Logout">Salir</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="fleet" data-es="Flota" data-en="Fleet">Flota</button>
+      <button class="tab" data-tab="hubs" data-es="Hubs" data-en="Hubs">Hubs</button>
+      <button class="tab" data-tab="generator" data-es="Generador" data-en="Generator">Generador</button>
+      <button class="tab" data-tab="bitacora" data-es="Bitácora" data-en="Logbook">Bitácora</button>
+      <button class="tab" data-tab="ranks" data-es="Rangos" data-en="Ranks">Rangos</button>
+    </div>
+
+    <div class="content">
+      <div id="tab-fleet" class="panel">
+        <h3 data-es="Flota" data-en="Fleet">Flota</h3>
+        <div id="fleetTable">Cargando...</div>
+      </div>
+      <div id="tab-hubs" class="panel hidden">
+        <h3 data-es="Hubs" data-en="Hubs">Hubs</h3>
+        <div id="hubsTable">Cargando...</div>
+      </div>
+      <div id="tab-generator" class="panel hidden">
+        <h3 data-es="Generador de números de vuelo" data-en="Flight Number Generator">Generador de números de vuelo</h3>
+        <p data-es="Próximamente" data-en="Coming soon">Próximamente</p>
+      </div>
+      <div id="tab-bitacora" class="panel hidden">
+        <h3 data-es="Bitácora" data-en="Logbook">Bitácora</h3>
+        <div id="bitacoraTable">Cargando...</div>
+      </div>
+      <div id="tab-ranks" class="panel hidden">
+        <h3 data-es="Rangos" data-en="Ranks">Rangos</h3>
+        <p data-es="Próximamente" data-en="Coming soon">Próximamente</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
+const SUPABASE_ANON_KEY = 'TU_ANON_KEY_AQUI';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentLang = 'es';
+let currentUser = null;
+
+function t(es, en) { return currentLang === 'es' ? es : en; }
+
+function toggleLang() {
+  currentLang = currentLang === 'es' ? 'en' : 'es';
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-es]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + currentLang);
+  });
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById('loginError').textContent = error.message;
+    return;
+  }
+  currentUser = data.user;
+  showMain();
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  location.reload();
+}
+
+function showMain() {
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('mainView').classList.remove('hidden');
+  loadFleet();
+  loadHubs();
+  loadBitacora();
+}
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.content > div').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+async function loadFleet() {
+  const { data, error } = await supabase.from('fleet').select('*').order('registration');
+  if (error) return;
+  let html = `<table><thead><tr>
+    <th>${t('Matrícula','Registration')}</th>
+    <th>${t('Modelo','Model')}</th>
+    <th>${t('Tipo','Type')}</th>
+    <th>${t('Estado','Status')}</th>
+  </tr></thead><tbody>`;
+  data.forEach(a => {
+    html += `<tr>
+      <td>${a.registration}</td>
+      <td>${a.model}</td>
+      <td>${a.usage_type}</td>
+      <td><span class="status-dot dot-${a.status}"></span>${a.status}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('fleetTable').innerHTML = html;
+}
+
+async function loadHubs() {
+  const { data } = await supabase.from('hubs').select('*').order('icao');
+  if (!data) return;
+  let html = `<table><thead><tr><th>ICAO</th><th>${t('Nombre','Name')}</th><th>${t('Ciudad','City')}</th></tr></thead><tbody>`;
+  data.forEach(h => {
+    html += `<tr><td>${h.icao}</td><td>${h.name}</td><td>${h.city || ''}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('hubsTable').innerHTML = html;
+}
+
+async function loadBitacora() {
+  const { data } = await supabase.from('bitacora').select('*').order('registration');
+  if (!data) return;
+  let html = `<table><thead><tr>
+    <th></th>
+    <th>${t('Matrícula','Registration')}</th>
+    <th>${t('Modelo','Model')}</th>
+    <th>${t('Estado','Status')}</th>
+    <th>${t('Vuelo','Flight')}</th>
+    <th>${t('Ubicación','Location')}</th>
+  </tr></thead><tbody>`;
+  data.forEach(b => {
+    html += `<tr>
+      <td><span class="status-dot dot-${b.status}"></span></td>
+      <td>${b.registration}</td>
+      <td>${b.aircraft_model || ''}</td>
+      <td>${b.status}</td>
+      <td>${b.flight_number || '-'}</td>
+      <td>${b.location || '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('bitacoraTable').innerHTML = html;
+}
+
+supabase.auth.getSession().then(({ data }) => {
+  if (data.session) {
+    currentUser = data.session.user;
+    showMain();
+  }
+});
+</script>
+</body>
+</html>
