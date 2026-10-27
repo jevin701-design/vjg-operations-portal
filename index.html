@@ -168,7 +168,7 @@ th, td {
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentLang = 'es';
 let currentUser = null;
 
@@ -185,7 +185,7 @@ function toggleLang() {
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     document.getElementById('loginError').textContent = error.message;
     return;
@@ -195,7 +195,7 @@ async function login() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   location.reload();
 }
 
@@ -217,7 +217,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 });
 
 async function loadFleet() {
-  const { data, error } = await supabase.from('fleet').select('*').order('registration');
+  const { data, error } = await sb.from('fleet').select('*').order('registration');
   if (error) return;
   let html = `<table><thead><tr>
     <th>${t('Matrícula','Registration')}</th>
@@ -238,7 +238,7 @@ async function loadFleet() {
 }
 
 async function loadHubs() {
-  const { data } = await supabase.from('hubs').select('*').order('icao');
+  const { data } = await sb.from('hubs').select('*').order('icao');
   if (!data) return;
   let html = `<table><thead><tr><th>ICAO</th><th>${t('Nombre','Name')}</th><th>${t('Ciudad','City')}</th></tr></thead><tbody>`;
   data.forEach(h => {
@@ -249,7 +249,7 @@ async function loadHubs() {
 }
 
 async function loadBitacora() {
-  const { data } = await supabase.from('bitacora').select('*').order('registration');
+  const { data } = await sb.from('bitacora').select('*').order('registration');
   if (!data) return;
   let html = `<table><thead><tr>
     <th></th>
@@ -273,7 +273,7 @@ async function loadBitacora() {
   document.getElementById('bitacoraTable').innerHTML = html;
 }
 
-supabase.auth.getSession().then(({ data }) => {
+sb.auth.getSession().then(({ data }) => {
   if (data.session) {
     currentUser = data.session.user;
     showMain();
