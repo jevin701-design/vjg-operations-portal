@@ -13,7 +13,6 @@
   --text: #f5f5f5;
   --muted: #a0a0a0;
   --red: #c8102e;
-  --red-soft: #e11d3a;
   --border: #2a2a2a;
   --green: #22c55e;
 }
@@ -26,160 +25,79 @@ body {
   line-height: 1.5;
 }
 .left-bar {
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  width: 6px;
-  background: var(--red);
-  z-index: 100;
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: 6px; background: var(--red); z-index: 100;
 }
 header {
   background: #111;
   border-bottom: 1px solid var(--border);
   padding: 16px 24px 16px 32px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  position: sticky; top: 0; z-index: 50;
 }
 .brand {
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: 1px;
-  text-decoration: none;
-  color: white;
+  font-weight: 800; font-size: 22px; letter-spacing: 1px;
+  text-decoration: none; color: white;
 }
 .brand span { color: var(--red); }
 nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin-top: 12px;
-  font-size: 14px;
+  display: flex; flex-wrap: wrap; gap: 16px;
+  margin-top: 12px; font-size: 14px;
 }
 nav a {
-  color: #ddd;
-  text-decoration: none;
+  color: #ddd; text-decoration: none; cursor: pointer;
 }
-nav a:hover { color: white; }
-.header-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
+nav a:hover, nav a.active { color: white; }
+.header-actions { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
 .btn {
-  background: transparent;
-  border: 1px solid #444;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
+  background: transparent; border: 1px solid #444; color: white;
+  padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;
 }
-.btn.primary {
-  background: var(--red);
-  border-color: var(--red);
-}
-.btn.green {
-  border-color: var(--green);
-  color: var(--green);
-}
+.btn.primary { background: var(--red); border-color: var(--red); }
+.btn.green { border-color: var(--green); color: var(--green); }
 main { padding: 0 24px 60px 32px; }
-.section {
-  padding: 60px 0;
-  border-bottom: 1px solid #222;
-}
+.view { display: none; }
+.view.active { display: block; }
+.section { padding: 40px 0; }
 .eyebrow {
-  color: var(--red);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
+  color: var(--red); font-weight: 700; font-size: 13px;
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px;
 }
-h1 {
-  font-size: clamp(36px, 6vw, 64px);
-  line-height: 1.05;
-  margin: 0 0 20px;
-  font-weight: 800;
-}
+h1 { font-size: clamp(32px, 5vw, 56px); line-height: 1.05; margin: 0 0 16px; font-weight: 800; }
 h1 .accent { color: var(--red); }
-h2 {
-  font-size: clamp(28px, 4vw, 42px);
-  margin: 0 0 16px;
-  font-weight: 800;
-}
+h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 16px; font-weight: 800; }
 .lead { font-size: 18px; color: #ccc; max-width: 720px; }
 .cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 32px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px; margin-top: 24px;
 }
 .card {
-  background: var(--card);
-  border: 1px solid #2a2a2a;
-  border-top: 3px solid var(--red);
-  border-radius: 8px;
-  padding: 20px;
+  background: var(--card); border: 1px solid #2a2a2a;
+  border-top: 3px solid var(--red); border-radius: 8px; padding: 20px;
 }
-.card h3 { margin: 8px 0; font-size: 22px; }
-.range { color: var(--red); font-weight: 700; margin-top: 16px; }
+.range { color: var(--red); font-weight: 700; margin-top: 12px; }
 .hub-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  margin-top: 24px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin-top: 24px;
 }
 .hub {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  padding: 12px;
-  border-radius: 6px;
-  text-align: center;
+  background: #1a1a1a; border: 1px solid #333; padding: 12px;
+  border-radius: 6px; text-align: center;
 }
 .hub strong { color: var(--red); display: block; font-size: 18px; }
-.login-modal, .app-panel { display: none; }
-.login-modal.active, .app-panel.active { display: block; }
 .login-box {
-  max-width: 380px;
-  margin: 80px auto;
-  background: var(--panel);
-  padding: 32px;
-  border-radius: 12px;
-  border: 1px solid #333;
+  max-width: 420px; margin: 60px auto; background: var(--panel);
+  padding: 32px; border-radius: 12px; border: 1px solid #333;
 }
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  background: #0d0d0d;
-  border: 1px solid #333;
-  color: white;
-  border-radius: 6px;
+input[type="email"], input[type="password"] {
+  width: 100%; padding: 12px; margin: 8px 0; background: #0d0d0d;
+  border: 1px solid #333; color: white; border-radius: 6px;
 }
-.tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 20px 0;
-}
-.tab {
-  background: transparent;
-  border: 1px solid #444;
-  color: #aaa;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.tab.active { background: var(--red); color: white; border-color: var(--red); }
-.panel { display: none; }
-.panel.active { display: block; }
+.checkbox { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 14px; }
 table { width: 100%; border-collapse: collapse; margin-top: 12px; }
 th, td { padding: 10px; text-align: left; border-bottom: 1px solid #2a2a2a; }
 .status-dot {
-  display: inline-block;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  margin-right: 6px;
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; margin-right: 6px;
 }
 .dot-available { background: #22c55e; }
 .dot-flying { background: #ef4444; }
@@ -188,16 +106,15 @@ th, td { padding: 10px; text-align: left; border-bottom: 1px solid #2a2a2a; }
 .dot-maintenance { background: #eab308; }
 .dot-unavailable { background: #6b7280; }
 .hidden { display: none !important; }
-footer {
-  padding: 40px 32px;
-  border-top: 1px solid #222;
-  color: #888;
-  font-size: 14px;
+footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size: 14px; }
+.member-only { opacity: 0.6; pointer-events: none; }
+.member-notice {
+  background: #2a1a1a; border: 1px solid var(--red); padding: 16px;
+  border-radius: 8px; margin-top: 16px;
 }
 @media (max-width: 700px) {
   header, main, footer { padding-left: 20px; padding-right: 16px; }
   .left-bar { width: 4px; }
-  nav { gap: 12px; }
 }
 </style>
 </head>
@@ -205,125 +122,166 @@ footer {
 <div class="left-bar"></div>
 
 <header>
-  <a class="brand" href="#">VISTA<span>JET</span> GROUP</a>
+  <a class="brand" href="#" onclick="showView('home'); return false;">VISTA<span>JET</span> GROUP</a>
   <nav>
-    <a href="#company" data-es="Compañía" data-en="Company">Compañía</a>
-    <a href="#divisions" data-es="Divisiones" data-en="Divisions">Divisiones</a>
-    <a href="#fleet" data-es="Flota" data-en="Fleet">Flota</a>
-    <a href="#hubs" data-es="Hubs" data-en="Hubs">Hubs</a>
-    <a href="#ops" data-es="Operaciones" data-en="Operations">Operaciones</a>
+    <a onclick="showView('about')" data-es="Acerca de" data-en="About Us">Acerca de</a>
+    <a onclick="showView('staff')" data-es="Nuestro staff" data-en="Our Staff">Nuestro staff</a>
+    <a onclick="showView('fleet')" data-es="Flota" data-en="Fleet">Flota</a>
+    <a onclick="showView('routes')" data-es="Rutas" data-en="Routes">Rutas</a>
+    <a onclick="showView('hubs')" data-es="Hubs" data-en="Hubs">Hubs</a>
+    <a onclick="showView('ranks')" data-es="Rangos" data-en="Ranks">Rangos</a>
+    <a onclick="showView('apply')" data-es="Únete" data-en="Apply">Únete</a>
+    <a onclick="showView('generator')" data-es="Generador" data-en="Generator">Generador</a>
+    <a onclick="showView('bitacora')" data-es="Bitácora" data-en="Logbook">Bitácora</a>
   </nav>
   <div class="header-actions">
     <button class="btn" onclick="toggleLang()">English</button>
-    <button class="btn green" id="loginBtn" onclick="showLogin()" data-es="Iniciar sesión" data-en="Sign in">Iniciar sesión</button>
+    <button class="btn green" id="loginBtn" onclick="showView('login')" data-es="Iniciar sesión" data-en="Sign in">Iniciar sesión</button>
   </div>
 </header>
 
 <main>
-  <div id="publicView">
-    <section class="section" id="hero">
+  <div id="view-home" class="view active">
+    <section class="section">
       <div class="eyebrow" data-es="AVIACIÓN VIRTUAL GLOBAL · INFINITE FLIGHT" data-en="GLOBAL VIRTUAL AVIATION · INFINITE FLIGHT">AVIACIÓN VIRTUAL GLOBAL · INFINITE FLIGHT</div>
       <h1><span data-es="Tu aeronave." data-en="Your aircraft.">Tu aeronave.</span><br>
           <span data-es="Tu destino." data-en="Your destination.">Tu destino.</span><br>
           <span class="accent" data-es="Tu libertad." data-en="Your freedom.">Tu libertad.</span></h1>
       <p class="lead" data-es="VistaJet Group es una organización de aviación virtual que conecta destinos mediante aviación privada, vuelos chárter y operaciones de carga, con un modelo flexible punto a punto." data-en="VistaJet Group is a virtual aviation organization connecting destinations through private aviation, charter flights, and cargo operations with a flexible point-to-point model.">VistaJet Group es una organización de aviación virtual que conecta destinos mediante aviación privada, vuelos chárter y operaciones de carga, con un modelo flexible punto a punto.</p>
     </section>
-
-    <section class="section" id="company">
+    <section class="section">
       <div class="eyebrow">01 · <span data-es="LA COMPAÑÍA" data-en="THE COMPANY">LA COMPAÑÍA</span></div>
       <h2 data-es="Conectividad global. Libertad operativa." data-en="Global Connectivity. Operational Freedom.">Conectividad global. Libertad operativa.</h2>
       <p class="lead" data-es="VJG permite elegir aeronave, destinos, rutas y horarios de salida, respetando las capacidades de cada avión y las reglas de la compañía." data-en="VJG allows pilots to choose aircraft, destinations, routes, and departure times while respecting each aircraft’s capabilities and the company’s operating rules.">VJG permite elegir aeronave, destinos, rutas y horarios de salida, respetando las capacidades de cada avión y las reglas de la compañía.</p>
     </section>
-
-    <section class="section" id="divisions">
+    <section class="section">
       <div class="eyebrow">02 · <span data-es="DIVISIONES" data-en="DIVISIONS">DIVISIONES</span></div>
       <h2 data-es="Tres operaciones. Una red integrada." data-en="Three Operations. One Integrated Network.">Tres operaciones. Una red integrada.</h2>
       <div class="cards">
         <div class="card">
           <div class="eyebrow">DIVISIÓN 01</div>
           <h3 data-es="Aviación privada" data-en="Private Aviation">Aviación privada</h3>
-          <p data-es="Viajes privados y ejecutivos, con libertad para elegir aeronave y destino." data-en="Private and executive travel, with freedom to choose aircraft and destination.">Viajes privados y ejecutivos, con libertad para elegir aeronave y destino.</p>
+          <p data-es="Viajes privados y ejecutivos." data-en="Private and executive travel.">Viajes privados y ejecutivos.</p>
           <div class="range">VJT 100–499</div>
         </div>
         <div class="card">
           <div class="eyebrow">DIVISIÓN 02</div>
           <h3 data-es="Operaciones de carga" data-en="Cargo Operations">Operaciones de carga</h3>
-          <p data-es="Transporte de carga entre centros logísticos e industriales." data-en="Cargo transport between logistics and industrial centers.">Transporte de carga entre centros logísticos e industriales.</p>
+          <p data-es="Transporte de carga." data-en="Cargo transport.">Transporte de carga.</p>
           <div class="range">VJT 500–899</div>
         </div>
         <div class="card">
           <div class="eyebrow">DIVISIÓN 03</div>
           <h3 data-es="Operaciones chárter" data-en="Charter Operations">Operaciones chárter</h3>
-          <p data-es="Vuelos de pasajeros contratados para una misión o necesidad concreta." data-en="Passenger flights contracted for a specific mission or need.">Vuelos de pasajeros contratados para una misión o necesidad concreta.</p>
+          <p data-es="Vuelos contratados." data-en="Contracted flights.">Vuelos contratados.</p>
           <div class="range">VJT 900–999</div>
         </div>
       </div>
     </section>
+  </div>
 
-    <section class="section" id="fleet">
-      <div class="eyebrow">03 · <span data-es="NUESTRA FLOTA" data-en="OUR FLEET">NUESTRA FLOTA</span></div>
+  <div id="view-about" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="ACERCA DE" data-en="ABOUT US">ACERCA DE</div>
+      <h2 data-es="Acerca de VistaJet Group" data-en="About VistaJet Group">Acerca de VistaJet Group</h2>
+      <p class="lead" data-es="VistaJet Group Virtual es una organización de aviación virtual en Infinite Flight enfocada en operaciones privadas, chárter y de carga con un modelo flexible punto a punto." data-en="VistaJet Group Virtual is a virtual aviation organization on Infinite Flight focused on private, charter, and cargo operations with a flexible point-to-point model.">VistaJet Group Virtual es una organización de aviación virtual en Infinite Flight enfocada en operaciones privadas, chárter y de carga con un modelo flexible punto a punto.</p>
+    </section>
+  </div>
+
+  <div id="view-staff" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="NUESTRO STAFF" data-en="OUR STAFF">NUESTRO STAFF</div>
+      <h2 data-es="Nuestro equipo" data-en="Our Team">Nuestro equipo</h2>
+      <p class="lead" data-es="Próximamente." data-en="Coming soon.">Próximamente.</p>
+    </section>
+  </div>
+
+  <div id="view-fleet" class="view">
+    <section class="section">
+      <div class="eyebrow">03 · <span data-es="FLOTA" data-en="FLEET">FLOTA</span></div>
       <h2 data-es="Aeronaves para cada misión." data-en="Aircraft for Every Mission.">Aeronaves para cada misión.</h2>
-      <div class="cards" id="publicFleet"></div>
+      <div id="fleetContent"></div>
     </section>
+  </div>
 
-    <section class="section" id="hubs">
-      <div class="eyebrow">04 · <span data-es="RED OPERATIVA" data-en="OPERATIONAL NETWORK">RED OPERATIVA</span></div>
+  <div id="view-routes" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="RUTAS" data-en="ROUTES">RUTAS</div>
+      <h2 data-es="Rutas" data-en="Routes">Rutas</h2>
+      <p class="lead" data-es="Próximamente." data-en="Coming soon.">Próximamente.</p>
+    </section>
+  </div>
+
+  <div id="view-hubs" class="view">
+    <section class="section">
+      <div class="eyebrow">04 · <span data-es="HUBS" data-en="HUBS">HUBS</span></div>
       <h2>VJG Hubs</h2>
-      <p class="lead" data-es="MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes que no pueden operar desde MMLO." data-en="MMLO is the headquarters and primary hub. MMQT is the alternative for large aircraft that cannot operate from MMLO.">MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes que no pueden operar desde MMLO.</p>
-      <div class="hub-grid" id="publicHubs"></div>
+      <p class="lead" data-es="MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes." data-en="MMLO is the headquarters and primary hub. MMQT is the alternative for large aircraft.">MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes.</p>
+      <div class="hub-grid" id="hubsContent"></div>
     </section>
+  </div>
 
-    <section class="section" id="ops">
-      <div class="eyebrow">05 · <span data-es="OPERACIONES" data-en="OPERATIONS">OPERACIONES</span></div>
-      <h2 data-es="Planifica y registra cada vuelo." data-en="Plan and register every flight.">Planifica y registra cada vuelo.</h2>
-      <div class="cards">
-        <div class="card">
-          <h3 data-es="Generador de vuelos" data-en="Flight Generator">Generador de vuelos</h3>
-          <p data-es="Reglas de numeración VJT, por categoría y por región de salida." data-en="VJT numbering rules, by category and departure region.">Reglas de numeración VJT, por categoría y por región de salida.</p>
-          <button class="btn" onclick="showLogin()" data-es="Abrir generador" data-en="Open generator">Abrir generador</button>
+  <div id="view-ranks" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="RANGOS" data-en="RANKS">RANGOS</div>
+      <h2 data-es="Rangos de piloto" data-en="Pilot Ranks">Rangos de piloto</h2>
+      <p class="lead" data-es="Próximamente." data-en="Coming soon.">Próximamente.</p>
+    </section>
+  </div>
+
+  <div id="view-apply" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="ÚNETE" data-en="APPLY">ÚNETE</div>
+      <h2 data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</h2>
+      <p class="lead" data-es="Solicita unirte a nuestra organización en Infinite Flight." data-en="Request to join our organization on Infinite Flight.">Solicita unirte a nuestra organización en Infinite Flight.</p>
+      <p><a class="btn primary" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Aplicar ahora" data-en="Apply now">Aplicar ahora</a></p>
+    </section>
+  </div>
+
+  <div id="view-generator" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="GENERADOR" data-en="GENERATOR">GENERADOR</div>
+      <h2 data-es="Generador de números de vuelo" data-en="Flight Number Generator">Generador de números de vuelo</h2>
+      <div id="generatorContent">
+        <p class="lead" data-es="Selecciona el tipo de vuelo y genera un número VJT." data-en="Select the flight type and generate a VJT number.">Selecciona el tipo de vuelo y genera un número VJT.</p>
+        <div id="generatorForm" class="member-only">
+          <p data-es="Formulario del generador (solo miembros)." data-en="Generator form (members only).">Formulario del generador (solo miembros).</p>
         </div>
-        <div class="card">
-          <h3 data-es="Bitácora" data-en="Logbook">Bitácora</h3>
-          <p data-es="Estado actual de la flota y vuelos en curso." data-en="Current fleet status and flights in progress.">Estado actual de la flota y vuelos en curso.</p>
-          <button class="btn" onclick="showLogin()" data-es="Ver bitácora" data-en="View logbook">Ver bitácora</button>
+        <div id="generatorNotice" class="member-notice hidden">
+          <p data-es="Debes ser miembro de VistaJet Group para usar el generador." data-en="You must be a VistaJet Group member to use the generator.">Debes ser miembro de VistaJet Group para usar el generador.</p>
+          <p><a href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</a></p>
         </div>
       </div>
     </section>
   </div>
 
-  <div id="loginView" class="login-modal">
+  <div id="view-bitacora" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="BITÁCORA" data-en="LOGBOOK">BITÁCORA</div>
+      <h2 data-es="Bitácora" data-en="Logbook">Bitácora</h2>
+      <div id="bitacoraContent"></div>
+    </section>
+  </div>
+
+  <div id="view-login" class="view">
     <div class="login-box">
       <h2 data-es="Iniciar sesión" data-en="Sign in">Iniciar sesión</h2>
       <input id="email" type="email" placeholder="Correo">
-      <input id="password" type="password" placeholder="Contraseña">
+      <div style="position:relative;">
+        <input id="password" type="password" placeholder="Contraseña">
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" id="remember"> <span data-es="Recordar correo" data-en="Remember email">Recordar correo</span>
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" id="showPass" onchange="togglePassword()"> <span data-es="Ver contraseña" data-en="Show password">Ver contraseña</span>
+      </label>
       <button class="btn primary" onclick="login()" data-es="Entrar" data-en="Sign in">Entrar</button>
-      <p id="loginError" style="color:#ef4444; font-size:14px;"></p>
-      <button class="btn" onclick="hideLogin()" data-es="Volver" data-en="Back">Volver</button>
-    </div>
-  </div>
-
-  <div id="appView" class="app-panel">
-    <div class="tabs">
-      <button class="tab active" data-tab="fleetApp" data-es="Flota" data-en="Fleet">Flota</button>
-      <button class="tab" data-tab="hubsApp" data-es="Hubs" data-en="Hubs">Hubs</button>
-      <button class="tab" data-tab="generatorApp" data-es="Generador" data-en="Generator">Generador</button>
-      <button class="tab" data-tab="bitacoraApp" data-es="Bitácora" data-en="Logbook">Bitácora</button>
-    </div>
-    <div id="fleetApp" class="panel active">
-      <h2 data-es="Flota" data-en="Fleet">Flota</h2>
-      <div id="fleetTable"></div>
-    </div>
-    <div id="hubsApp" class="panel">
-      <h2 data-es="Hubs" data-en="Hubs">Hubs</h2>
-      <div id="hubsTable"></div>
-    </div>
-    <div id="generatorApp" class="panel">
-      <h2 data-es="Generador de números de vuelo" data-en="Flight Number Generator">Generador de números de vuelo</h2>
-      <p data-es="Próximamente" data-en="Coming soon">Próximamente</p>
-    </div>
-    <div id="bitacoraApp" class="panel">
-      <h2 data-es="Bitácora" data-en="Logbook">Bitácora</h2>
-      <div id="bitacoraTable"></div>
+      <p id="loginError" style="color:#ef4444; font-size:14px; margin-top:12px;"></p>
+      <div id="notMember" class="member-notice hidden">
+        <p data-es="No eres miembro de VistaJet Group." data-en="You are not a VistaJet Group member.">No eres miembro de VistaJet Group.</p>
+        <p><a href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</a></p>
+      </div>
     </div>
   </div>
 </main>
@@ -337,9 +295,11 @@ footer {
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const ORG_LINK = 'https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976';
 
 let currentLang = 'es';
 let currentUser = null;
+let isMember = false;
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -353,142 +313,118 @@ function toggleLang() {
   document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
 }
 
-function showLogin() {
-  document.getElementById('publicView').classList.add('hidden');
-  document.getElementById('loginView').classList.add('active');
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'fleet') loadFleet();
+  if (name === 'hubs') loadHubs();
+  if (name === 'bitacora') loadBitacora();
+  if (name === 'generator') updateGeneratorAccess();
 }
-function hideLogin() {
-  document.getElementById('loginView').classList.remove('active');
-  document.getElementById('publicView').classList.remove('hidden');
+
+function togglePassword() {
+  const p = document.getElementById('password');
+  p.type = document.getElementById('showPass').checked ? 'text' : 'password';
 }
 
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
+  const remember = document.getElementById('remember').checked;
+  if (remember) localStorage.setItem('vjg_email', email);
+  else localStorage.removeItem('vjg_email');
+
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     document.getElementById('loginError').textContent = error.message;
     return;
   }
   currentUser = data.user;
-  showApp();
+  isMember = true;
+  document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').onclick = logout;
+  document.getElementById('notMember').classList.add('hidden');
+  showView('home');
+  updateGeneratorAccess();
 }
 
 async function logout() {
   await sb.auth.signOut();
+  currentUser = null;
+  isMember = false;
   location.reload();
 }
 
-function showApp() {
-  document.getElementById('publicView').classList.add('hidden');
-  document.getElementById('loginView').classList.remove('active');
-  document.getElementById('appView').classList.add('active');
-  document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
-  document.getElementById('loginBtn').onclick = logout;
-  loadFleet();
-  loadHubs();
-  loadBitacora();
+function updateGeneratorAccess() {
+  const form = document.getElementById('generatorForm');
+  const notice = document.getElementById('generatorNotice');
+  if (isMember) {
+    form.classList.remove('member-only');
+    notice.classList.add('hidden');
+  } else {
+    form.classList.add('member-only');
+    notice.classList.remove('hidden');
+  }
 }
 
-document.querySelectorAll('.tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(btn.dataset.tab).classList.add('active');
-  });
-});
-
-async function loadPublicFleet() {
+async function loadFleet() {
   const { data } = await sb.from('fleet').select('*').order('registration');
-  const el = document.getElementById('publicFleet');
+  const el = document.getElementById('fleetContent');
   if (!data || !data.length) {
-    el.innerHTML = '<p style="color:#888">No hay aeronaves registradas aún.</p>';
+    el.innerHTML = '<p style="color:#888">' + t('No hay aeronaves registradas.','No aircraft registered.') + '</p>';
     return;
   }
-  el.innerHTML = data.map(a => `
-    <div class="card fleet-card">
+  el.innerHTML = '<div class="cards">' + data.map(a => `
+    <div class="card">
       <div class="eyebrow">${a.registration}</div>
       <h3>${a.model || ''}</h3>
       <p>${a.usage_type || ''}</p>
+      <p><span class="status-dot dot-${a.status}"></span>${a.status || ''}</p>
     </div>
-  `).join('');
+  `).join('') + '</div>';
 }
 
-async function loadPublicHubs() {
+async function loadHubs() {
   const { data } = await sb.from('hubs').select('*').order('icao');
-  const el = document.getElementById('publicHubs');
+  const el = document.getElementById('hubsContent');
   if (!data || !data.length) return;
   el.innerHTML = data.map(h => `
     <div class="hub"><strong>${h.icao}</strong>${h.name || ''} ${h.city ? '· ' + h.city : ''}</div>
   `).join('');
 }
 
-async function loadFleet() {
-  const { data } = await sb.from('fleet').select('*').order('registration');
-  if (!data) return;
-  let html = `<table><thead><tr>
-    <th>${t('Matrícula','Registration')}</th>
-    <th>${t('Modelo','Model')}</th>
-    <th>${t('Tipo','Type')}</th>
-    <th>${t('Estado','Status')}</th>
-  </tr></thead><tbody>`;
-  data.forEach(a => {
-    html += `<tr>
-      <td>${a.registration}</td>
-      <td>${a.model || ''}</td>
-      <td>${a.usage_type || ''}</td>
-      <td><span class="status-dot dot-${a.status}"></span>${a.status || ''}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('fleetTable').innerHTML = html;
-}
-
-async function loadHubs() {
-  const { data } = await sb.from('hubs').select('*').order('icao');
-  if (!data) return;
-  let html = `<table><thead><tr><th>ICAO</th><th>${t('Nombre','Name')}</th><th>${t('Ciudad','City')}</th></tr></thead><tbody>`;
-  data.forEach(h => {
-    html += `<tr><td>${h.icao}</td><td>${h.name || ''}</td><td>${h.city || ''}</td></tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('hubsTable').innerHTML = html;
-}
-
 async function loadBitacora() {
   const { data } = await sb.from('bitacora').select('*').order('registration');
-  if (!data) return;
-  let html = `<table><thead><tr>
-    <th></th>
-    <th>${t('Matrícula','Registration')}</th>
-    <th>${t('Modelo','Model')}</th>
-    <th>${t('Estado','Status')}</th>
-    <th>${t('Vuelo','Flight')}</th>
-    <th>${t('Ubicación','Location')}</th>
-  </tr></thead><tbody>`;
+  const el = document.getElementById('bitacoraContent');
+  if (!data || !data.length) {
+    el.innerHTML = '<p style="color:#888">' + t('Sin registros.','No records.') + '</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th></th><th>' + t('Matrícula','Registration') + '</th><th>' + t('Estado','Status') + '</th><th>' + t('Vuelo','Flight') + '</th><th>' + t('Ubicación','Location') + '</th></tr></thead><tbody>';
   data.forEach(b => {
     html += `<tr>
       <td><span class="status-dot dot-${b.status}"></span></td>
       <td>${b.registration}</td>
-      <td>${b.aircraft_model || ''}</td>
       <td>${b.status || ''}</td>
       <td>${b.flight_number || '-'}</td>
       <td>${b.location || '-'}</td>
     </tr>`;
   });
   html += '</tbody></table>';
-  document.getElementById('bitacoraTable').innerHTML = html;
+  el.innerHTML = html;
 }
+
+const savedEmail = localStorage.getItem('vjg_email');
+if (savedEmail) document.getElementById('email').value = savedEmail;
 
 sb.auth.getSession().then(({ data }) => {
   if (data.session) {
     currentUser = data.session.user;
-    showApp();
-  } else {
-    loadPublicFleet();
-    loadPublicHubs();
+    isMember = true;
+    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+    document.getElementById('loginBtn').onclick = logout;
   }
+  updateGeneratorAccess();
 });
 </script>
 </body>
