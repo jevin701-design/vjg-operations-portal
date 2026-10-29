@@ -304,6 +304,27 @@ let isAdmin = false;
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
+const usageMap = {
+  'Privada': { es: 'Privada', en: 'Private' },
+  'Cargo': { es: 'Cargo', en: 'Cargo' },
+  'Chárter': { es: 'Chárter', en: 'Charter' }
+};
+const statusMap = {
+  'available': { es: 'Disponible', en: 'Available' },
+  'flying': { es: 'Volando', en: 'Flying' },
+  'on_ground': { es: 'En tierra', en: 'On ground' },
+  'hangar': { es: 'Hangar', en: 'Hangar' },
+  'maintenance': { es: 'Mantenimiento', en: 'Maintenance' },
+  'unavailable': { es: 'No disponible', en: 'Unavailable' }
+};
+
+function translateUsage(val) {
+  return usageMap[val] ? usageMap[val][currentLang] : (val || '');
+}
+function translateStatus(val) {
+  return statusMap[val] ? statusMap[val][currentLang] : (val || '');
+}
+
 function toggleLang() {
   currentLang = currentLang === 'es' ? 'en' : 'es';
   document.documentElement.lang = currentLang;
@@ -402,7 +423,7 @@ async function loadFleet() {
         <select id="formUsage" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
           <option value="">${t('Tipo de uso','Usage type')}</option>
           <option value="Privada">${t('Privada','Private')}</option>
-          <option value="Cargo">Cargo</option>
+          <option value="Cargo">${t('Cargo','Cargo')}</option>
           <option value="Chárter">${t('Chárter','Charter')}</option>
         </select>
         <input id="formLocation" placeholder="${t('Ubicación (ICAO o ruta MMMX-MMLO)','Location (ICAO or route MMMX-MMLO)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
@@ -441,9 +462,9 @@ async function loadFleet() {
       <td>${a.registration}</td>
       <td>${a.manufacturer || ''}</td>
       <td>${a.model || ''}</td>
-      <td>${a.usage_type || ''}</td>
+      <td>${translateUsage(a.usage_type)}</td>
       <td>${a.location || '-'}</td>
-      <td><span class="status-dot dot-${a.status}"></span>${a.status || ''}</td>`;
+      <td><span class="status-dot dot-${a.status}"></span>${translateStatus(a.status)}</td>`;
     if (isAdmin) {
       html += `<td><button class="btn" onclick="openEditForm('${a.registration}')">${t('Editar','Edit')}</button> <button class="btn" onclick="deleteAircraft('${a.registration}')">${t('Eliminar','Delete')}</button></td>`;
     }
