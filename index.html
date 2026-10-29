@@ -374,14 +374,22 @@ async function loadFleet() {
     el.innerHTML = '<p style="color:#888">' + t('No hay aeronaves registradas.','No aircraft registered.') + '</p>';
     return;
   }
-  el.innerHTML = '<div class="cards">' + data.map(a => `
-    <div class="card">
-      <div class="eyebrow">${a.registration}</div>
-      <h3>${a.model || ''}</h3>
-      <p>${a.usage_type || ''}</p>
-      <p><span class="status-dot dot-${a.status}"></span>${a.status || ''}</p>
-    </div>
-  `).join('') + '</div>';
+  let html = `<table><thead><tr>
+    <th>${t('Matrícula','Registration')}</th>
+    <th>${t('Modelo','Model')}</th>
+    <th>${t('Tipo de uso','Usage Type')}</th>
+    <th>${t('Estado','Status')}</th>
+  </tr></thead><tbody>`;
+  data.forEach(a => {
+    html += `<tr>
+      <td>${a.registration}</td>
+      <td>${a.model || ''}</td>
+      <td>${a.usage_type || ''}</td>
+      <td><span class="status-dot dot-${a.status}"></span>${a.status || ''}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 
 async function loadHubs() {
