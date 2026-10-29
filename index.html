@@ -312,6 +312,13 @@ function toggleLang() {
     if (val) el.textContent = val;
   });
   document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
+  const active = document.querySelector('.view.active');
+  if (active) {
+    const id = active.id.replace('view-', '');
+    if (id === 'fleet') loadFleet();
+    if (id === 'hubs') loadHubs();
+    if (id === 'bitacora') loadBitacora();
+  }
 }
 
 function showView(name) {
@@ -375,14 +382,27 @@ async function loadFleet() {
   const { data } = await sb.from('fleet').select('*').order('registration');
   const el = document.getElementById('fleetContent');
   let html = '';
+
   if (isAdmin) {
-    html += '<button class="btn primary" style="margin-bottom:12px;" onclick="addAircraft()">' + t('Agregar aeronave','Add aircraft') + '</button>';
+    html += `
+      <div id="addForm" style="display:none; background:#1a1a1a; padding:16px; border-radius:8px; margin-bottom:16px; border:1px solid #333;">
+        <h3>${t('Agregar aeronave','Add aircraft')}</h3>
+        <input id="newReg" placeholder="${t('Matrícula (IF-XXXX)','Registration (IF-XXXX)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+        <input id="newModel" placeholder="${t('Modelo','Model')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+        <input id="newUsage" placeholder="${t('Tipo de uso (Privada/Cargo/Chárter)','Usage type (Private/Cargo/Charter)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+        <button class="btn primary" onclick="saveAircraft()">${t('Guardar','Save')}</button>
+        <button class="btn" onclick="document.getElementById('addForm').style.display='none'">${t('Cancelar','Cancel')}</button>
+      </div>
+      <button class="btn primary" style="margin-bottom:12px;" onclick="document.getElementById('addForm').style.display='block'">${t('Agregar aeronave','Add aircraft')}</button>
+    `;
   }
+
   if (!data || !data.length) {
     html += '<p style="color:#888">' + t('No hay aeronaves registradas.','No aircraft registered.') + '</p>';
     el.innerHTML = html;
     return;
   }
+
   html += `<table><thead><tr>
     <th>${t('Matrícula','Registration')}</th>
     <th>${t('Modelo','Model')}</th>
@@ -405,11 +425,11 @@ async function loadFleet() {
   el.innerHTML = html;
 }
 
-async function addAircraft() {
-  const reg = prompt(t('Matrícula (ej. IF-XXXX)','Registration (e.g. IF-XXXX)'));
-  if (!reg) return;
-  const model = prompt(t('Modelo','Model'));
-  const usage = prompt(t('Tipo de uso (Privada/Cargo/Chárter)','Usage type'));
+async function saveAircraft() {
+  const reg = document.getElementById('newReg').value.trim();
+  const model = document.getElementById('newModel').value.trim();
+  const usage = document.getElementById('newUsage').value.trim();
+  if (!reg) { alert(t('La matrícula es obligatoria','Registration is required')); return; }
   const { error } = await sb.from('fleet').insert({ registration: reg, model, usage_type: usage, status: 'available' });
   if (error) alert(error.message);
   else loadFleet();
