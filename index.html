@@ -385,15 +385,39 @@ async function loadFleet() {
 
   if (isAdmin) {
     html += `
-      <div id="addForm" style="display:none; background:#1a1a1a; padding:16px; border-radius:8px; margin-bottom:16px; border:1px solid #333;">
-        <h3>${t('Agregar aeronave','Add aircraft')}</h3>
-        <input id="newReg" placeholder="${t('Matrícula (IF-XXXX)','Registration (IF-XXXX)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
-        <input id="newModel" placeholder="${t('Modelo','Model')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
-        <input id="newUsage" placeholder="${t('Tipo de uso (Privada/Cargo/Chárter)','Usage type (Private/Cargo/Charter)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
-        <button class="btn primary" onclick="saveAircraft()">${t('Guardar','Save')}</button>
-        <button class="btn" onclick="document.getElementById('addForm').style.display='none'">${t('Cancelar','Cancel')}</button>
+      <div id="aircraftForm" style="display:none; background:#1a1a1a; padding:16px; border-radius:8px; margin-bottom:16px; border:1px solid #333;">
+        <h3 id="formTitle">${t('Agregar aeronave','Add aircraft')}</h3>
+        <input id="formReg" placeholder="${t('Matrícula (IF-XXXX)','Registration (IF-XXXX)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+        <select id="formManufacturer" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+          <option value="">${t('Fabricante','Manufacturer')}</option>
+          <option>Airbus</option>
+          <option>Boeing</option>
+          <option>Bombardier</option>
+          <option>Embraer</option>
+          <option>Cessna</option>
+          <option>Dassault</option>
+          <option>Gulfstream</option>
+        </select>
+        <input id="formModel" placeholder="${t('Modelo (ej. 777F, A380-800)','Model (e.g. 777F, A380-800)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+        <select id="formUsage" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+          <option value="">${t('Tipo de uso','Usage type')}</option>
+          <option value="Privada">${t('Privada','Private')}</option>
+          <option value="Cargo">Cargo</option>
+          <option value="Chárter">${t('Chárter','Charter')}</option>
+        </select>
+        <input id="formLocation" placeholder="${t('Ubicación (ICAO o ruta MMMX-MMLO)','Location (ICAO or route MMMX-MMLO)')}" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+        <select id="formStatus" style="width:100%; padding:10px; margin:6px 0; background:#0d0d0d; border:1px solid #333; color:white; border-radius:6px;">
+          <option value="available">${t('Disponible','Available')}</option>
+          <option value="flying">${t('Volando','Flying')}</option>
+          <option value="on_ground">${t('En tierra','On ground')}</option>
+          <option value="hangar">${t('Hangar','Hangar')}</option>
+          <option value="maintenance">${t('Mantenimiento','Maintenance')}</option>
+          <option value="unavailable">${t('No disponible','Unavailable')}</option>
+        </select>
+        <button class="btn primary" id="formSaveBtn" onclick="saveAircraft()">${t('Guardar','Save')}</button>
+        <button class="btn" onclick="document.getElementById('aircraftForm').style.display='none'">${t('Cancelar','Cancel')}</button>
       </div>
-      <button class="btn primary" style="margin-bottom:12px;" onclick="document.getElementById('addForm').style.display='block'">${t('Agregar aeronave','Add aircraft')}</button>
+      <button class="btn primary" style="margin-bottom:12px;" onclick="openAddForm()">${t('Agregar aeronave','Add aircraft')}</button>
     `;
   }
 
@@ -405,19 +429,23 @@ async function loadFleet() {
 
   html += `<table><thead><tr>
     <th>${t('Matrícula','Registration')}</th>
+    <th>${t('Fabricante','Manufacturer')}</th>
     <th>${t('Modelo','Model')}</th>
     <th>${t('Tipo de uso','Usage Type')}</th>
+    <th>${t('Ubicación','Location')}</th>
     <th>${t('Estado','Status')}</th>`;
   if (isAdmin) html += '<th></th>';
   html += '</tr></thead><tbody>';
   data.forEach(a => {
     html += `<tr>
       <td>${a.registration}</td>
+      <td>${a.manufacturer || ''}</td>
       <td>${a.model || ''}</td>
       <td>${a.usage_type || ''}</td>
+      <td>${a.location || '-'}</td>
       <td><span class="status-dot dot-${a.status}"></span>${a.status || ''}</td>`;
     if (isAdmin) {
-      html += `<td><button class="btn" onclick="editAircraft('${a.registration}')">${t('Editar','Edit')}</button> <button class="btn" onclick="deleteAircraft('${a.registration}')">${t('Eliminar','Delete')}</button></td>`;
+      html += `<td><button class="btn" onclick="openEditForm('${a.registration}')">${t('Editar','Edit')}</button> <button class="btn" onclick="deleteAircraft('${a.registration}')">${t('Eliminar','Delete')}</button></td>`;
     }
     html += '</tr>';
   });
@@ -425,25 +453,53 @@ async function loadFleet() {
   el.innerHTML = html;
 }
 
-async function saveAircraft() {
-  const reg = document.getElementById('newReg').value.trim();
-  const model = document.getElementById('newModel').value.trim();
-  const usage = document.getElementById('newUsage').value.trim();
-  if (!reg) { alert(t('La matrícula es obligatoria','Registration is required')); return; }
-  const { error } = await sb.from('fleet').insert({ registration: reg, model, usage_type: usage, status: 'available' });
-  if (error) alert(error.message);
-  else loadFleet();
+function openAddForm() {
+  document.getElementById('aircraftForm').style.display = 'block';
+  document.getElementById('formTitle').textContent = t('Agregar aeronave','Add aircraft');
+  document.getElementById('formSaveBtn').onclick = () => saveAircraft(false);
+  document.getElementById('formReg').value = '';
+  document.getElementById('formReg').disabled = false;
+  document.getElementById('formManufacturer').value = '';
+  document.getElementById('formModel').value = '';
+  document.getElementById('formUsage').value = '';
+  document.getElementById('formLocation').value = '';
+  document.getElementById('formStatus').value = 'available';
 }
 
-async function editAircraft(reg) {
-  const model = prompt(t('Nuevo modelo','New model'));
-  const usage = prompt(t('Nuevo tipo de uso','New usage type'));
-  const status = prompt(t('Nuevo estado (available/flying/on_ground/hangar/maintenance/unavailable)','New status'));
-  const updates = {};
-  if (model) updates.model = model;
-  if (usage) updates.usage_type = usage;
-  if (status) updates.status = status;
-  const { error } = await sb.from('fleet').update(updates).eq('registration', reg);
+async function openEditForm(reg) {
+  const { data } = await sb.from('fleet').select('*').eq('registration', reg).single();
+  if (!data) return;
+  document.getElementById('aircraftForm').style.display = 'block';
+  document.getElementById('formTitle').textContent = t('Editar aeronave','Edit aircraft');
+  document.getElementById('formSaveBtn').onclick = () => saveAircraft(true);
+  document.getElementById('formReg').value = data.registration;
+  document.getElementById('formReg').disabled = true;
+  document.getElementById('formManufacturer').value = data.manufacturer || '';
+  document.getElementById('formModel').value = data.model || '';
+  document.getElementById('formUsage').value = data.usage_type || '';
+  document.getElementById('formLocation').value = data.location || '';
+  document.getElementById('formStatus').value = data.status || 'available';
+}
+
+async function saveAircraft(isEdit) {
+  const reg = document.getElementById('formReg').value.trim();
+  const manufacturer = document.getElementById('formManufacturer').value;
+  const model = document.getElementById('formModel').value.trim();
+  const usage = document.getElementById('formUsage').value;
+  const location = document.getElementById('formLocation').value.trim();
+  const status = document.getElementById('formStatus').value;
+
+  if (!reg) { alert(t('La matrícula es obligatoria','Registration is required')); return; }
+  if (!usage) { alert(t('Selecciona el tipo de uso','Select usage type')); return; }
+
+  const payload = { manufacturer, model, usage_type: usage, location, status };
+  let error;
+  if (isEdit) {
+    ({ error } = await sb.from('fleet').update(payload).eq('registration', reg));
+  } else {
+    payload.registration = reg;
+    ({ error } = await sb.from('fleet').insert(payload));
+  }
   if (error) alert(error.message);
   else loadFleet();
 }
