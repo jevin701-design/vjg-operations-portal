@@ -300,6 +300,7 @@ const ORG_LINK = 'https://live.infiniteflight.com/organization/211f692c-6099-428
 let currentLang = 'es';
 let currentUser = null;
 let isMember = false;
+let isAdmin = false;
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -341,6 +342,8 @@ async function login() {
   }
   currentUser = data.user;
   isMember = true;
+  const { data: profile } = await sb.from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle();
+  isAdmin = profile?.is_admin === true;
   document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
   document.getElementById('loginBtn').onclick = logout;
   document.getElementById('notMember').classList.add('hidden');
@@ -352,6 +355,7 @@ async function logout() {
   await sb.auth.signOut();
   currentUser = null;
   isMember = false;
+  isAdmin = false;
   location.reload();
 }
 
@@ -370,26 +374,65 @@ function updateGeneratorAccess() {
 async function loadFleet() {
   const { data } = await sb.from('fleet').select('*').order('registration');
   const el = document.getElementById('fleetContent');
+  let html = '';
+  if (isAdmin) {
+    html += '<button class="btn primary" style="margin-bottom:12px;" onclick="addAircraft()">' + t('Agregar aeronave','Add aircraft') + '</button>';
+  }
   if (!data || !data.length) {
-    el.innerHTML = '<p style="color:#888">' + t('No hay aeronaves registradas.','No aircraft registered.') + '</p>';
+    html += '<p style="color:#888">' + t('No hay aeronaves registradas.','No aircraft registered.') + '</p>';
+    el.innerHTML = html;
     return;
   }
-  let html = `<table><thead><tr>
+  html += `<table><thead><tr>
     <th>${t('Matrícula','Registration')}</th>
     <th>${t('Modelo','Model')}</th>
     <th>${t('Tipo de uso','Usage Type')}</th>
-    <th>${t('Estado','Status')}</th>
-  </tr></thead><tbody>`;
+    <th>${t('Estado','Status')}</th>`;
+  if (isAdmin) html += '<th></th>';
+  html += '</tr></thead><tbody>';
   data.forEach(a => {
     html += `<tr>
       <td>${a.registration}</td>
       <td>${a.model || ''}</td>
       <td>${a.usage_type || ''}</td>
-      <td><span class="status-dot dot-${a.status}"></span>${a.status || ''}</td>
-    </tr>`;
+      <td><span class="status-dot dot-${a.status}"></span>${a.status || ''}</td>`;
+    if (isAdmin) {
+      html += `<td><button class="btn" onclick="editAircraft('${a.registration}')">${t('Editar','Edit')}</button> <button class="btn" onclick="deleteAircraft('${a.registration}')">${t('Eliminar','Delete')}</button></td>`;
+    }
+    html += '</tr>';
   });
   html += '</tbody></table>';
   el.innerHTML = html;
+}
+
+async function addAircraft() {
+  const reg = prompt(t('Matrícula (ej. IF-XXXX)','Registration (e.g. IF-XXXX)'));
+  if (!reg) return;
+  const model = prompt(t('Modelo','Model'));
+  const usage = prompt(t('Tipo de uso (Privada/Cargo/Chárter)','Usage type'));
+  const { error } = await sb.from('fleet').insert({ registration: reg, model, usage_type: usage, status: 'available' });
+  if (error) alert(error.message);
+  else loadFleet();
+}
+
+async function editAircraft(reg) {
+  const model = prompt(t('Nuevo modelo','New model'));
+  const usage = prompt(t('Nuevo tipo de uso','New usage type'));
+  const status = prompt(t('Nuevo estado (available/flying/on_ground/hangar/maintenance/unavailable)','New status'));
+  const updates = {};
+  if (model) updates.model = model;
+  if (usage) updates.usage_type = usage;
+  if (status) updates.status = status;
+  const { error } = await sb.from('fleet').update(updates).eq('registration', reg);
+  if (error) alert(error.message);
+  else loadFleet();
+}
+
+async function deleteAircraft(reg) {
+  if (!confirm(t('¿Eliminar ' + reg + '?','Delete ' + reg + '?'))) return;
+  const { error } = await sb.from('fleet').delete().eq('registration', reg);
+  if (error) alert(error.message);
+  else loadFleet();
 }
 
 async function loadHubs() {
@@ -425,10 +468,12 @@ async function loadBitacora() {
 const savedEmail = localStorage.getItem('vjg_email');
 if (savedEmail) document.getElementById('email').value = savedEmail;
 
-sb.auth.getSession().then(({ data }) => {
+sb.auth.getSession().then(async ({ data }) => {
   if (data.session) {
     currentUser = data.session.user;
     isMember = true;
+    const { data: profile } = await sb.from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle();
+    isAdmin = profile?.is_admin === true;
     document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
     document.getElementById('loginBtn').onclick = logout;
   }
