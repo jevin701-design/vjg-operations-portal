@@ -481,6 +481,21 @@ async function openEditForm(reg) {
   document.getElementById('formStatus').value = data.status || 'available';
 }
 
+function showMsg(msg, isError) {
+  let box = document.getElementById('formMsg');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'formMsg';
+    box.style.cssText = 'margin:10px 0; padding:10px; border-radius:6px; font-size:14px;';
+    const form = document.getElementById('aircraftForm');
+    if (form) form.prepend(box);
+  }
+  box.textContent = msg;
+  box.style.background = isError ? '#3a1a1a' : '#1a3a1a';
+  box.style.color = isError ? '#ef4444' : '#22c55e';
+  box.style.border = isError ? '1px solid #ef4444' : '1px solid #22c55e';
+}
+
 async function saveAircraft(isEdit) {
   const reg = document.getElementById('formReg').value.trim();
   const manufacturer = document.getElementById('formManufacturer').value;
@@ -489,8 +504,8 @@ async function saveAircraft(isEdit) {
   const location = document.getElementById('formLocation').value.trim();
   const status = document.getElementById('formStatus').value;
 
-  if (!reg) { alert(t('La matrícula es obligatoria','Registration is required')); return; }
-  if (!usage) { alert(t('Selecciona el tipo de uso','Select usage type')); return; }
+  if (!reg) { showMsg(t('La matrícula es obligatoria','Registration is required'), true); return; }
+  if (!usage) { showMsg(t('Selecciona el tipo de uso','Select usage type'), true); return; }
 
   const payload = { manufacturer, model, usage_type: usage, location, status };
   let error;
@@ -500,15 +515,27 @@ async function saveAircraft(isEdit) {
     payload.registration = reg;
     ({ error } = await sb.from('fleet').insert(payload));
   }
-  if (error) alert(error.message);
-  else loadFleet();
+  if (error) showMsg(error.message, true);
+  else {
+    showMsg(t('Guardado','Saved'), false);
+    setTimeout(() => loadFleet(), 600);
+  }
 }
 
 async function deleteAircraft(reg) {
-  if (!confirm(t('¿Eliminar ' + reg + '?','Delete ' + reg + '?'))) return;
-  const { error } = await sb.from('fleet').delete().eq('registration', reg);
-  if (error) alert(error.message);
-  else loadFleet();
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#2a1a1a; border:1px solid #ef4444; padding:12px; border-radius:8px; margin:12px 0;';
+  box.innerHTML = `<p>${t('¿Eliminar ' + reg + '?','Delete ' + reg + '?')}</p>
+    <button class="btn primary" id="confirmDel">${t('Eliminar','Delete')}</button>
+    <button class="btn" id="cancelDel">${t('Cancelar','Cancel')}</button>`;
+  const el = document.getElementById('fleetContent');
+  el.prepend(box);
+  document.getElementById('cancelDel').onclick = () => box.remove();
+  document.getElementById('confirmDel').onclick = async () => {
+    const { error } = await sb.from('fleet').delete().eq('registration', reg);
+    if (error) showMsg(error.message, true);
+    else loadFleet();
+  };
 }
 
 async function loadHubs() {
