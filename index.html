@@ -544,6 +544,16 @@ function showHistory(reg) {
   document.getElementById('historyCard').style.display = 'block';
 }
 
+async function safeJson(res) {
+  const text = await res.text();
+  if (!text) return { error: 'Respuesta vacía', status: res.status };
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return { error: 'JSON inválido', status: res.status, raw: text.slice(0, 200) };
+  }
+}
+
 async function loadBitacora() {
   const statusEl = document.getElementById('statusTextBit');
   const addBtn = document.getElementById('addFlightBtn');
@@ -585,9 +595,10 @@ async function loadBitacora() {
       const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
         headers: { Authorization: 'Bearer ' + token }
       });
-      const orgData = await orgRes.json();
-      if (!orgData.result || !orgData.result.length) {
-        ifDebug.textContent = 'No se encontraron organizaciones (respuesta: ' + JSON.stringify(orgData).slice(0, 200) + ')';
+      const orgData = await safeJson(orgRes);
+      if (orgData.error || !orgData.result || !orgData.result.length) {
+        ifDebug.textContent = `Error organizaciones (status ${orgData.status || orgRes.status}): ${orgData.error || 'sin resultado'}`;
+        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="color:#ef4444">Error al obtener organizaciones. Vuelve a conectar con IF.</td></tr>';
         return;
       }
 
@@ -595,7 +606,7 @@ async function loadBitacora() {
       const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
         headers: { Authorization: 'Bearer ' + token }
       });
-      const acData = await acRes.json();
+      const acData = await safeJson(acRes);
       const aircraftList = acData.result || [];
       const ifFlights = [];
       let activeCount = 0;
@@ -604,7 +615,7 @@ async function loadBitacora() {
         const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
           headers: { Authorization: 'Bearer ' + token }
         });
-        const flData = await flRes.json();
+        const flData = await safeJson(flRes);
         if (flData.result && flData.result.items) {
           const items = flData.result.items.map(f => ({ ...f, registration: ac.registration || f.callsign }));
           ifFlights.push(...items);
