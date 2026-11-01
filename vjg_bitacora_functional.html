@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VJG — Bitácora (funcional)</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: light-dark(#f3f5f8, #0a0f18);
+  --panel: light-dark(#fff, #121a27);
+  --panel2: light-dark(#f8fafc, #182232);
+  --text: light-dark(#152033, #edf2f9);
+  --muted: light-dark(#657187, #9ba9bd);
+  --line: light-dark(#dce3ec, #2a3749);
+  --accent: #c8102e;
+  --green: #1b9a6b;
+  --amber: #b7791f;
+  --shadow: 0 8px 30px #0000000b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Inter, system-ui, sans-serif; }
+.container { max-width: 1280px; margin: auto; padding: 24px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.heading { margin-bottom: 16px; }
+.eyebrow { font-size: 11px; color: var(--accent); font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; }
+h1 { margin: 4px 0 8px; font-size: 26px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; color: var(--muted); font-weight: 800; text-transform: uppercase; }
+.pill { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 99px; background: var(--panel2); display: inline-block; }
+.pill.closed { background: #14372c; color: var(--green); }
+.pill.active { background: #391a25; color: var(--accent); }
+.pill.pending { background: #3a2a10; color: var(--amber); }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 9px; padding: 6px 10px; font-weight: 700; cursor: pointer; font-size: 12px; }
+.btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.reg-link { color: var(--accent); font-weight: 700; cursor: pointer; text-decoration: none; }
+.reg-link:hover { text-decoration: underline; }
+.view { display: none; }
+.view.active { display: block; }
+.back { margin-bottom: 12px; }
+.details-row { display: none; }
+.details-row.show { display: table-row; }
+.details-content { padding: 12px; background: var(--panel2); font-size: 13px; }
+.details-content div { margin: 4px 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 700; }
+input, select { width: 100%; padding: 8px; background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; }
+@media (max-width: 768px) {
+  .desktop-only { display: none; }
+  .mobile-details { display: inline-block; }
+}
+@media (min-width: 769px) {
+  .mobile-details { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- BITÁCORA GENERAL -->
+  <div id="view-general" class="view active">
+    <div class="heading">
+      <div class="eyebrow">Operaciones</div>
+      <h1>Bitácora General</h1>
+      <p style="color:var(--muted)">Vuelos recientes. Haz clic en una matrícula para ver el historial de esa aeronave.</p>
+    </div>
+
+    <div id="authStatus" class="card" style="margin-bottom:16px">
+      <p id="statusText" style="margin:0;color:var(--muted)">Verificando sesión…</p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">Vuelos</h3>
+        <button class="btn primary" id="addFlightBtn" style="display:none">+ Registrar vuelo reciente</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>VJT</th>
+              <th>Matrícula</th>
+              <th>Ruta</th>
+              <th>Tipo de uso</th>
+              <th>Estado</th>
+              <th>Piloto</th>
+            </tr>
+          </thead>
+          <tbody id="generalBody">
+            <tr><td colspan="7" style="text-align:center;color:var(--muted)">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Formulario para registrar vuelo -->
+    <div class="card" id="addForm" style="display:none">
+      <h3 style="margin-top:0">Registrar vuelo</h3>
+      <p style="color:var(--muted);font-size:13px;margin-top:0">Los datos de duración, origen, destino y combustible usado se pueden rellenar desde Infinite Flight cuando estés autenticado.</p>
+      <div class="grid2">
+        <div><label>Matrícula</label><input id="fReg" placeholder="IF-FVZV"></div>
+        <div><label>Número VJT</label><input id="fNumber" placeholder="VJT 142"></div>
+        <div><label>Origen</label><input id="fOrigin" placeholder="MMLO" maxlength="4"></div>
+        <div><label>Destino</label><input id="fDest" placeholder="KJFK" maxlength="4"></div>
+        <div>
+          <label>Tipo de uso</label>
+          <select id="fCategory">
+            <option>Privada</option>
+            <option>Cargo</option>
+            <option>Chárter</option>
+            <option>Militar</option>
+            <option>Gubernamental</option>
+          </select>
+        </div>
+        <div><label>Fecha</label><input type="date" id="fDate"></div>
+        <div><label>Combustible usado (kg)</label><input type="number" id="fFuelUsed" placeholder="72000"></div>
+        <div><label>Carga (kg)</label><input type="number" id="fPayload" placeholder="85000"></div>
+        <div><label>TOW (kg)</label><input type="number" id="fTow" placeholder="310000"></div>
+        <div><label>Tiempo de vuelo (h)</label><input type="number" step="0.1" id="fTime" placeholder="8.4"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn primary" id="saveFlight">Guardar vuelo</button>
+        <button class="btn" id="cancelFlight">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL DE AERONAVE -->
+  <div id="view-aircraft" class="view">
+    <button class="btn back" id="backBtn">← Volver a Bitácora General</button>
+    <div class="heading">
+      <div class="eyebrow">Historial de aeronave</div>
+      <h1 id="aircraftTitle">—</h1>
+      <p style="color:var(--muted)">Todos los vuelos registrados de esta aeronave.</p>
+    </div>
+    <div class="card">
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>VJT</th>
+              <th>Ruta</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th class="desktop-only">Carga (kg)</th>
+              <th class="desktop-only">Comb. usado (kg)</th>
+              <th class="desktop-only">TOW (kg)</th>
+              <th class="desktop-only">Tiempo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="aircraftBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN SUPABASE — PEGA TU ANON KEY AQUÍ
+// ============================================================
+const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
+const SUPABASE_ANON_KEY = 'TU_ANON_KEY_AQUI'; // ← Reemplaza esto
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let allFlights = [];
+let currentUser = null;
+
+// La sesión de Infinite Flight se gestiona en la página principal.
+// Aquí solo verificamos si ya existe una sesión activa en Supabase.
+async function checkSession() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      document.getElementById('statusText').textContent = `Sesión activa (usuario: ${currentUser.email || currentUser.id})`;
+      document.getElementById('addFlightBtn').style.display = 'inline-block';
+    } else {
+      document.getElementById('statusText').innerHTML = 'No hay sesión activa. <strong>Inicia sesión desde la página principal</strong> con Infinite Flight.';
+      document.getElementById('addFlightBtn').style.display = 'none';
+    }
+  } catch (e) {
+    document.getElementById('statusText').textContent = 'Error de conexión a Supabase';
+  }
+  await loadFlights();
+}
+
+async function loadFlights() {
+  try {
+    const { data, error } = await sb.from('flights')
+      .select('*')
+      .order('flight_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      document.getElementById('generalBody').innerHTML =
+        `<tr><td colspan="7" style="color:#ff8a8a">Error: ${error.message}<br><small>Verifica la anon key y que el esquema SQL esté ejecutado.</small></td></tr>`;
+      return;
+    }
+    allFlights = data || [];
+  } catch (e) {
+    document.getElementById('generalBody').innerHTML =
+      `<tr><td colspan="7" style="color:#ff8a8a">No se pudo conectar a Supabase.</td></tr>`;
+    return;
+  }
+  renderGeneral();
+}
+
+function renderGeneral() {
+  const body = document.getElementById('generalBody');
+  if (!allFlights.length) {
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted)">No hay vuelos registrados todavía.</td></tr>`;
+    return;
+  }
+  body.innerHTML = allFlights.map(f => `
+    <tr>
+      <td>${f.flight_date || '—'}</td>
+      <td>${f.flight_number || '—'}</td>
+      <td><a class="reg-link" data-reg="${f.registration}">${f.registration || '—'}</a></td>
+      <td>${f.origin || '?'} → ${f.destination || '?'}</td>
+      <td>${f.category || '—'}</td>
+      <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
+      <td>${f.pilot_id ? 'Piloto' : '—'}</td>
+    </tr>
+  `).join('');
+
+  body.querySelectorAll('.reg-link').forEach(a => {
+    a.onclick = (e) => { e.preventDefault(); showAircraft(a.dataset.reg); };
+  });
+}
+
+function showAircraft(reg) {
+  const flights = allFlights.filter(f => f.registration === reg);
+  document.getElementById('aircraftTitle').textContent = reg;
+
+  const body = document.getElementById('aircraftBody');
+  body.innerHTML = flights.map((f, i) => `
+    <tr>
+      <td>${f.flight_date || '—'}</td>
+      <td>${f.flight_number || '—'}</td>
+      <td>${f.origin || '?'} → ${f.destination || '?'}</td>
+      <td>${f.category || '—'}</td>
+      <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
+      <td class="desktop-only">${f.payload_kg?.toLocaleString() || '—'}</td>
+      <td class="desktop-only">${f.fuel_used_kg?.toLocaleString() || '—'}</td>
+      <td class="desktop-only">${f.tow_kg?.toLocaleString() || '—'}</td>
+      <td class="desktop-only">${f.flight_time_hours || '—'}</td>
+      <td><button class="btn mobile-details" data-i="${i}">Ver detalles</button></td>
+    </tr>
+    <tr class="details-row" id="details-${i}">
+      <td colspan="10">
+        <div class="details-content">
+          <div><strong>Carga:</strong> ${f.payload_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>Combustible a bordo:</strong> ${f.fuel_onboard_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>Combustible usado:</strong> ${f.fuel_used_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>Combustible drenado:</strong> ${f.fuel_drained_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>OEW:</strong> ${f.oew_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>TOW:</strong> ${f.tow_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>LW:</strong> ${f.lw_kg?.toLocaleString() || '—'} kg</div>
+          <div><strong>Tiempo de vuelo:</strong> ${f.flight_time_hours || '—'} h</div>
+          <div><strong>Notas:</strong> ${f.notes || '—'}</div>
+        </div>
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="10" style="text-align:center;color:var(--muted)">Sin vuelos para esta aeronave.</td></tr>`;
+
+  body.querySelectorAll('.mobile-details').forEach(btn => {
+    btn.onclick = () => document.getElementById('details-' + btn.dataset.i).classList.toggle('show');
+  });
+
+  document.getElementById('view-general').classList.remove('active');
+  document.getElementById('view-aircraft').classList.add('active');
+}
+
+document.getElementById('backBtn').onclick = () => {
+  document.getElementById('view-aircraft').classList.remove('active');
+  document.getElementById('view-general').classList.add('active');
+};
+
+document.getElementById('addFlightBtn').onclick = () => {
+  document.getElementById('addForm').style.display = 'block';
+  document.getElementById('fDate').valueAsDate = new Date();
+};
+document.getElementById('cancelFlight').onclick = () => {
+  document.getElementById('addForm').style.display = 'none';
+};
+
+document.getElementById('saveFlight').onclick = async () => {
+  const payload = {
+    registration: document.getElementById('fReg').value.trim() || null,
+    flight_number: document.getElementById('fNumber').value.trim() || null,
+    origin: document.getElementById('fOrigin').value.trim().toUpperCase() || null,
+    destination: document.getElementById('fDest').value.trim().toUpperCase() || null,
+    category: document.getElementById('fCategory').value,
+    flight_date: document.getElementById('fDate').value || null,
+    fuel_used_kg: parseInt(document.getElementById('fFuelUsed').value) || null,
+    payload_kg: parseInt(document.getElementById('fPayload').value) || null,
+    tow_kg: parseInt(document.getElementById('fTow').value) || null,
+    flight_time_hours: parseFloat(document.getElementById('fTime').value) || null,
+    status: 'closed'
+  };
+
+  if (!payload.flight_number || !payload.registration) {
+    alert('Matrícula y número de vuelo son obligatorios');
+    return;
+  }
+
+  const { error } = await sb.from('flights').insert(payload);
+  if (error) {
+    alert('Error al guardar: ' + error.message);
+    return;
+  }
+  document.getElementById('addForm').style.display = 'none';
+  await loadFlights();
+};
+
+// Iniciar
+checkSession();
+</script>
+</body>
+</html>
