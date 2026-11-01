@@ -283,7 +283,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <p id="ifDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>Fecha</th><th>Número de vuelo (IF)</th><th>Ruta</th><th>Estado / Tiempo</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Matrícula (IF)</th><th>Ruta</th><th>Estado / Tiempo</th></tr></thead>
               <tbody id="ifFlightsBody"></tbody>
             </table>
           </div>
@@ -544,38 +544,11 @@ function showHistory(reg) {
   document.getElementById('historyCard').style.display = 'block';
 }
 
-async function autoRegisterIFFlights(ifFlights) {
-  if (!currentUser || !ifFlights.length) return 0;
-  const existingNumbers = new Set(allFlights.map(f => (f.flight_number || '').toUpperCase()));
-  let registered = 0;
-  for (const f of ifFlights) {
-    const flightNumber = (f.callsign || '').trim();
-    if (!flightNumber) continue;
-    if (existingNumbers.has(flightNumber.toUpperCase())) continue;
-
-    const payload = {
-      registration: f.registration || null,
-      flight_number: flightNumber,
-      origin: f.originIcao || null,
-      destination: f.destinationIcao || null,
-      category: 'Privada',
-      flight_date: f.actualDepartureUtc ? f.actualDepartureUtc.split('T')[0] : null,
-      flight_time_hours: f.flightTimeMinutes ? parseFloat((f.flightTimeMinutes / 60).toFixed(1)) : null,
-      status: f.actualArrivalUtc ? 'closed' : 'active'
-    };
-
-    const { error } = await sb.from('flights').insert(payload);
-    if (!error) {
-      existingNumbers.add(flightNumber.toUpperCase());
-      registered++;
-    }
-  }
-  return registered;
-}
-
 async function loadBitacora() {
   const statusEl = document.getElementById('statusTextBit');
   const addBtn = document.getElementById('addFlightBtn');
+  const ifCard = document.getElementById('ifFlightsCard');
+  const ifDebug = document.getElementById('ifDebug');
 
   const { data, error } = await sb.from('flights').select('*').order('flight_date', { ascending: false });
   if (error) {
@@ -599,88 +572,75 @@ async function loadBitacora() {
   if (currentUser) {
     statusEl.textContent = 'Sesión activa — puedes registrar vuelos';
     addBtn.style.display = 'inline-block';
+    ifCard.style.display = 'block';
 
     const token = localStorage.getItem('if_access_token');
-    if (token) {
-      try {
-        const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+    if (!token) {
+      ifDebug.textContent = 'No hay token de Infinite Flight. Vuelve a conectar con IF.';
+      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin token de IF</td></tr>';
+      return;
+    }
+
+    try {
+      const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const orgData = await orgRes.json();
+      if (!orgData.result || !orgData.result.length) {
+        ifDebug.textContent = 'No se encontraron organizaciones (respuesta: ' + JSON.stringify(orgData).slice(0, 200) + ')';
+        return;
+      }
+
+      const orgId = orgData.result[0].id;
+      const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const acData = await acRes.json();
+      const aircraftList = acData.result || [];
+      const ifFlights = [];
+      let activeCount = 0;
+
+      for (const ac of aircraftList.slice(0, 15)) {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
           headers: { Authorization: 'Bearer ' + token }
         });
-        const orgData = await orgRes.json();
-        if (orgData.result && orgData.result.length) {
-          const orgId = orgData.result[0].id;
-          const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
-            headers: { Authorization: 'Bearer ' + token }
-          });
-          const acData = await acRes.json();
-          const aircraftList = acData.result || [];
-          const ifFlights = [];
-          let activeCount = 0;
-
-          for (const ac of aircraftList.slice(0, 15)) {
-            const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
-              headers: { Authorization: 'Bearer ' + token }
-            });
-            const flData = await flRes.json();
-            if (flData.result && flData.result.items) {
-              const items = flData.result.items.map(f => ({ ...f, registration: ac.registration || ac.callsign }));
-              ifFlights.push(...items);
-              activeCount += items.filter(f => !f.actualArrivalUtc).length;
-            }
-          }
-
-          const registeredNow = await autoRegisterIFFlights(ifFlights);
-
-          document.getElementById('ifDebug').textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount} · Registrados ahora: ${registeredNow}`;
-
-          // Recargar tabla de registrados
-          const { data: fresh } = await sb.from('flights').select('*').order('flight_date', { ascending: false });
-          allFlights = fresh || [];
-          document.getElementById('generalBody').innerHTML = allFlights.length
-            ? allFlights.map(f => `
-                <tr>
-                  <td>${f.flight_date || '—'}</td>
-                  <td>${f.flight_number || '—'}</td>
-                  <td><a class="reg-link" onclick="showHistory('${f.registration || ''}')">${f.registration || '—'}</a></td>
-                  <td>${f.origin || '?'} → ${f.destination || '?'}</td>
-                  <td>${f.category || '—'}</td>
-                  <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
-                </tr>
-              `).join('')
-            : '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay vuelos registrados</td></tr>';
-
-          if (ifFlights.length) {
-            document.getElementById('ifFlightsCard').style.display = 'block';
-            document.getElementById('ifFlightsBody').innerHTML = ifFlights.map((f) => {
-              const isActive = !f.actualArrivalUtc;
-              const statusLabel = isActive
-                ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
-                : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
-              return `
-                <tr style="${isActive ? 'background:#14372c' : ''}">
-                  <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-                  <td style="font-weight:700;color:#fff">${f.callsign || '—'}</td>
-                  <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
-                  <td>${statusLabel}</td>
-                </tr>
-              `;
-            }).join('');
-          } else {
-            document.getElementById('ifFlightsCard').style.display = 'block';
-            document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF</td></tr>';
-          }
-        } else {
-          document.getElementById('ifDebug').textContent = 'No se encontraron organizaciones';
+        const flData = await flRes.json();
+        if (flData.result && flData.result.items) {
+          const items = flData.result.items.map(f => ({ ...f, registration: ac.registration || f.callsign }));
+          ifFlights.push(...items);
+          activeCount += items.filter(f => !f.actualArrivalUtc).length;
         }
-      } catch (e) {
-        console.error(e);
-        document.getElementById('ifDebug').textContent = 'Error al cargar vuelos de IF: ' + e.message;
       }
+
+      ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
+
+      if (ifFlights.length) {
+        document.getElementById('ifFlightsBody').innerHTML = ifFlights.map((f) => {
+          const isActive = !f.actualArrivalUtc;
+          const statusLabel = isActive
+            ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
+            : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
+          return `
+            <tr style="${isActive ? 'background:#14372c' : ''}">
+              <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
+              <td style="font-weight:700">${f.registration || f.callsign || '—'}</td>
+              <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+              <td>${statusLabel}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF</td></tr>';
+      }
+    } catch (e) {
+      console.error(e);
+      ifDebug.textContent = 'Error al cargar vuelos de IF: ' + e.message;
+      document.getElementById('ifFlightsBody').innerHTML = `<tr><td colspan="4" style="color:#ef4444">${e.message}</td></tr>`;
     }
   } else {
     statusEl.textContent = 'Bitácora pública — inicia sesión para registrar vuelos';
     addBtn.style.display = 'none';
-    document.getElementById('ifFlightsCard').style.display = 'none';
+    ifCard.style.display = 'none';
   }
 }
 
