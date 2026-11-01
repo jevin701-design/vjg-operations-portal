@@ -353,7 +353,6 @@ const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Infinite Flight OAuth — FORZADO a Netlify
 const IF_CLIENT_ID = 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV';
 const IF_REDIRECT_URI = 'https://vistajet-group.netlify.app/';
 
@@ -426,17 +425,15 @@ async function handleIFCallback(){
     return;
   }
   try {
-    const body = new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: IF_CLIENT_ID,
-      code,
-      redirect_uri: IF_REDIRECT_URI,
-      code_verifier: verifier
-    });
-    const res = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+    // Llamar a la función de Netlify en lugar del endpoint directo
+    const res = await fetch('/.netlify/functions/if-token', {
       method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        code_verifier: verifier,
+        redirect_uri: IF_REDIRECT_URI
+      })
     });
     const tokenData = await res.json();
     if(tokenData.access_token){
