@@ -321,6 +321,8 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
   <div id="view-login" class="view">
     <div class="login-box">
       <h2 data-es="Iniciar sesión" data-en="Sign in">Iniciar sesión</h2>
+      <button class="btn primary" style="width:100%;margin-bottom:16px" onclick="startIFLogin()">Conectar con Infinite Flight</button>
+      <p style="text-align:center;color:var(--muted);margin:16px 0">o</p>
       <input id="email" type="email" placeholder="Correo">
       <div style="position:relative;">
         <input id="password" type="password" placeholder="Contraseña">
@@ -350,6 +352,10 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Infinite Flight OAuth
+const IF_CLIENT_ID = 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV';
+const IF_REDIRECT_URI = window.location.origin + window.location.pathname;
 
 let currentLang = 'es';
 let currentUser = null;
@@ -383,6 +389,61 @@ function togglePassword() {
   p.type = document.getElementById('showPass').checked ? 'text' : 'password';
 }
 
+// ===== INFINITE FLIGHT LOGIN =====
+function generateRandomString(len=64){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let out = '';
+  for(let i=0;i<len;i++) out += chars.charAt(Math.floor(Math.random()*chars.length));
+  return out;
+}
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function startIFLogin(){
+  const verifier = generateRandomString();
+  const challenge = await sha256(verifier);
+  sessionStorage.setItem('if_code_verifier', verifier);
+  const state = generateRandomString(16);
+  sessionStorage.setItem('if_state', state);
+  const scope = 'openid profile live:organizations.read live:aircraft.read';
+  const url = `https://api.infiniteflight.com/auth/v2/connect/authorize?response_type=code&client_id=${encodeURIComponent(IF_CLIENT_ID)}&redirect_uri=${encodeURIComponent(IF_REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
+  window.location.href = url;
+}
+
+async function handleIFCallback(){
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if(!code || state !== sessionStorage.getItem('if_state')) return;
+  const verifier = sessionStorage.getItem('if_code_verifier');
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: IF_CLIENT_ID,
+    code,
+    redirect_uri: IF_REDIRECT_URI,
+    code_verifier: verifier
+  });
+  const res = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body
+  });
+  const tokenData = await res.json();
+  if(tokenData.access_token){
+    sessionStorage.setItem('if_access_token', tokenData.access_token);
+    // Aquí se puede crear/actualizar perfil en Supabase si se desea
+    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+    document.getElementById('loginBtn').onclick = logout;
+    currentUser = { id: 'if_user', email: 'infiniteflight@user' };
+    isMember = true;
+    showView('home');
+  }
+  history.replaceState({}, '', IF_REDIRECT_URI);
+}
+
+// ===== SUPABASE EMAIL LOGIN =====
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -408,6 +469,7 @@ async function login() {
 
 async function logout() {
   await sb.auth.signOut();
+  sessionStorage.removeItem('if_access_token');
   currentUser = null;
   isMember = false;
   isAdmin = false;
@@ -420,7 +482,6 @@ async function loadBitacora() {
   const statusEl = document.getElementById('statusTextBit');
   const addBtn = document.getElementById('addFlightBtn');
 
-  // Always load and show flights for everyone
   const { data, error } = await sb.from('flights').select('*').order('flight_date', { ascending: false });
   if (error) {
     document.getElementById('generalBody').innerHTML = `<tr><td colspan="6" style="color:#ef4444">Error: ${error.message}</td></tr>`;
@@ -440,7 +501,6 @@ async function loadBitacora() {
       : '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay vuelos registrados</td></tr>';
   }
 
-  // Logged-in extras
   if (currentUser) {
     statusEl.textContent = 'Sesión activa — puedes registrar vuelos';
     addBtn.style.display = 'inline-block';
@@ -546,6 +606,7 @@ function updateGeneratorAccess() {
   }
 }
 
+// Init
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session) {
     currentUser = session.user;
@@ -554,6 +615,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
     document.getElementById('loginBtn').onclick = logout;
   }
 });
+handleIFCallback();
 </script>
 </body>
 </html>
