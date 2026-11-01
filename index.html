@@ -353,9 +353,9 @@ const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Infinite Flight OAuth
+// Infinite Flight OAuth — FORZADO a Netlify
 const IF_CLIENT_ID = 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV';
-const IF_REDIRECT_URI = window.location.origin + window.location.pathname;
+const IF_REDIRECT_URI = 'https://vistajet-group.netlify.app/';
 
 let currentLang = 'es';
 let currentUser = null;
@@ -389,7 +389,6 @@ function togglePassword() {
   p.type = document.getElementById('showPass').checked ? 'text' : 'password';
 }
 
-// ===== INFINITE FLIGHT LOGIN =====
 function generateRandomString(len=64){
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   let out = '';
@@ -416,34 +415,47 @@ async function handleIFCallback(){
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   const state = params.get('state');
-  if(!code || state !== sessionStorage.getItem('if_state')) return;
+  if(!code) return;
+  if(state !== sessionStorage.getItem('if_state')) {
+    alert('State mismatch');
+    return;
+  }
   const verifier = sessionStorage.getItem('if_code_verifier');
-  const body = new URLSearchParams({
-    grant_type: 'authorization_code',
-    client_id: IF_CLIENT_ID,
-    code,
-    redirect_uri: IF_REDIRECT_URI,
-    code_verifier: verifier
-  });
-  const res = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body
-  });
-  const tokenData = await res.json();
-  if(tokenData.access_token){
-    sessionStorage.setItem('if_access_token', tokenData.access_token);
-    // Aquí se puede crear/actualizar perfil en Supabase si se desea
-    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
-    document.getElementById('loginBtn').onclick = logout;
-    currentUser = { id: 'if_user', email: 'infiniteflight@user' };
-    isMember = true;
-    showView('home');
+  if(!verifier) {
+    alert('No code verifier');
+    return;
+  }
+  try {
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: IF_CLIENT_ID,
+      code,
+      redirect_uri: IF_REDIRECT_URI,
+      code_verifier: verifier
+    });
+    const res = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body
+    });
+    const tokenData = await res.json();
+    if(tokenData.access_token){
+      sessionStorage.setItem('if_access_token', tokenData.access_token);
+      currentUser = { id: 'if_user', email: 'infiniteflight@user' };
+      isMember = true;
+      document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+      document.getElementById('loginBtn').onclick = logout;
+      alert('Conectado con Infinite Flight');
+      showView('home');
+    } else {
+      alert('Error token: ' + JSON.stringify(tokenData));
+    }
+  } catch(e) {
+    alert('Error callback: ' + e.message);
   }
   history.replaceState({}, '', IF_REDIRECT_URI);
 }
 
-// ===== SUPABASE EMAIL LOGIN =====
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -606,7 +618,6 @@ function updateGeneratorAccess() {
   }
 }
 
-// Init
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session) {
     currentUser = session.user;
