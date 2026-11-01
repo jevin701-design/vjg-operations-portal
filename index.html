@@ -118,6 +118,16 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 .pill.closed { background: #14372c; color: #22c55e; }
 .pill.active { background: #391a25; color: var(--red); }
 .pill.pending { background: #3a2a10; color: #eab308; }
+/* Toast */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: #1e1e1e; border: 1px solid var(--green); color: white;
+  padding: 14px 24px; border-radius: 10px; z-index: 9999;
+  font-size: 15px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  animation: fadeIn .3s ease;
+}
+.toast.error { border-color: #ef4444; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @media (max-width: 700px) {
   header, main, footer { padding-left: 20px; padding-right: 16px; }
   .left-bar { width: 4px; }
@@ -364,6 +374,14 @@ let allFlights = [];
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
+function showToast(msg, isError = false) {
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (isError ? ' error' : '');
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
 function toggleLang() {
   currentLang = currentLang === 'es' ? 'en' : 'es';
   document.documentElement.lang = currentLang;
@@ -416,16 +434,15 @@ async function handleIFCallback(){
   const state = params.get('state');
   if(!code) return;
   if(state !== sessionStorage.getItem('if_state')) {
-    alert('State mismatch');
+    showToast('State mismatch', true);
     return;
   }
   const verifier = sessionStorage.getItem('if_code_verifier');
   if(!verifier) {
-    alert('No code verifier');
+    showToast('No code verifier', true);
     return;
   }
   try {
-    // Llamar a la función de Netlify en lugar del endpoint directo
     const res = await fetch('/.netlify/functions/if-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -437,18 +454,18 @@ async function handleIFCallback(){
     });
     const tokenData = await res.json();
     if(tokenData.access_token){
-      sessionStorage.setItem('if_access_token', tokenData.access_token);
+      localStorage.setItem('if_access_token', tokenData.access_token);
       currentUser = { id: 'if_user', email: 'infiniteflight@user' };
       isMember = true;
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
       document.getElementById('loginBtn').onclick = logout;
-      alert('Conectado con Infinite Flight');
+      showToast('Conectado con Infinite Flight');
       showView('home');
     } else {
-      alert('Error token: ' + JSON.stringify(tokenData));
+      showToast('Error token: ' + JSON.stringify(tokenData), true);
     }
   } catch(e) {
-    alert('Error callback: ' + e.message);
+    showToast('Error callback: ' + e.message, true);
   }
   history.replaceState({}, '', IF_REDIRECT_URI);
 }
@@ -478,13 +495,24 @@ async function login() {
 
 async function logout() {
   await sb.auth.signOut();
-  sessionStorage.removeItem('if_access_token');
+  localStorage.removeItem('if_access_token');
   currentUser = null;
   isMember = false;
   isAdmin = false;
   document.getElementById('loginBtn').textContent = t('Iniciar sesión', 'Sign in');
   document.getElementById('loginBtn').onclick = () => showView('login');
   showView('home');
+  showToast('Sesión cerrada');
+}
+
+function restoreIFSession() {
+  const token = localStorage.getItem('if_access_token');
+  if (token) {
+    currentUser = { id: 'if_user', email: 'infiniteflight@user' };
+    isMember = true;
+    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+    document.getElementById('loginBtn').onclick = logout;
+  }
 }
 
 async function loadBitacora() {
@@ -514,7 +542,7 @@ async function loadBitacora() {
     statusEl.textContent = 'Sesión activa — puedes registrar vuelos';
     addBtn.style.display = 'inline-block';
 
-    const token = sessionStorage.getItem('if_access_token');
+    const token = localStorage.getItem('if_access_token');
     if (token) {
       try {
         const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
@@ -529,8 +557,8 @@ async function loadBitacora() {
           const acData = await acRes.json();
           if (acData.result) {
             const ifFlights = [];
-            for (const ac of acData.result.slice(0, 3)) {
-              const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
+            for (const ac of acData.result.slice(0, 5)) {
+              const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=10`, {
                 headers: { Authorization: 'Bearer ' + token }
               });
               const flData = await flRes.json();
@@ -550,6 +578,9 @@ async function loadBitacora() {
                 </tr>
               `).join('');
               window.ifFlightsCache = ifFlights;
+            } else {
+              document.getElementById('ifFlightsCard').style.display = 'block';
+              document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF (el vuelo actual aún no aparece hasta que termina)</td></tr>';
             }
           }
         }
@@ -575,7 +606,7 @@ function fillFromIF(index) {
 
 async function saveFlight() {
   if (!currentUser) {
-    alert('Debes iniciar sesión para registrar un vuelo');
+    showToast('Debes iniciar sesión para registrar un vuelo', true);
     return;
   }
   const payload = {
@@ -589,15 +620,16 @@ async function saveFlight() {
     status: 'closed'
   };
   if (!payload.flight_number || !payload.registration) {
-    alert('Matrícula y número de vuelo son obligatorios');
+    showToast('Matrícula y número de vuelo son obligatorios', true);
     return;
   }
   const { error } = await sb.from('flights').insert(payload);
   if (error) {
-    alert('Error: ' + error.message);
+    showToast('Error: ' + error.message, true);
     return;
   }
   document.getElementById('addForm').style.display = 'none';
+  showToast('Vuelo registrado');
   loadBitacora();
 }
 
@@ -615,6 +647,7 @@ function updateGeneratorAccess() {
   }
 }
 
+// Init
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session) {
     currentUser = session.user;
@@ -623,6 +656,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
     document.getElementById('loginBtn').onclick = logout;
   }
 });
+restoreIFSession();
 handleIFCallback();
 </script>
 </body>
