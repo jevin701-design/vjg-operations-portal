@@ -267,7 +267,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <h2 data-es="Bitácora" data-en="Logbook">Bitácora</h2>
       <div id="bitacoraContent">
         <div id="authStatusBit" class="card" style="margin-bottom:16px">
-          <p id="statusTextBit" style="margin:0;color:var(--muted)">Verificando sesión…</p>
+          <p id="statusTextBit" style="margin:0;color:var(--muted)">Bitácora pública</p>
         </div>
         <div class="card" id="ifFlightsCard" style="display:none;margin-bottom:16px">
           <h3 style="margin-top:0">Vuelos recientes de Infinite Flight</h3>
@@ -419,77 +419,78 @@ async function logout() {
 async function loadBitacora() {
   const statusEl = document.getElementById('statusTextBit');
   const addBtn = document.getElementById('addFlightBtn');
-  if (!currentUser) {
-    statusEl.innerHTML = 'Inicia sesión para ver y registrar vuelos.';
-    addBtn.style.display = 'none';
-    document.getElementById('generalBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Inicia sesión</td></tr>';
-    return;
-  }
-  statusEl.textContent = 'Sesión activa';
-  addBtn.style.display = 'inline-block';
 
-  // Load IF flights if token exists
-  const token = sessionStorage.getItem('if_access_token');
-  if (token) {
-    try {
-      const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      const orgData = await orgRes.json();
-      if (orgData.result && orgData.result.length) {
-        const orgId = orgData.result[0].id;
-        const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        const acData = await acRes.json();
-        if (acData.result) {
-          const ifFlights = [];
-          for (const ac of acData.result.slice(0, 3)) {
-            const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
-              headers: { Authorization: 'Bearer ' + token }
-            });
-            const flData = await flRes.json();
-            if (flData.result && flData.result.items) {
-              ifFlights.push(...flData.result.items.map(f => ({ ...f, registration: ac.registration || ac.callsign })));
-            }
-          }
-          if (ifFlights.length) {
-            document.getElementById('ifFlightsCard').style.display = 'block';
-            document.getElementById('ifFlightsBody').innerHTML = ifFlights.map((f, i) => `
-              <tr>
-                <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-                <td>${f.callsign || '—'}</td>
-                <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
-                <td>${f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—'}</td>
-                <td><button class="btn primary" onclick="fillFromIF(${i})">Usar</button></td>
-              </tr>
-            `).join('');
-            window.ifFlightsCache = ifFlights;
-          }
-        }
-      }
-    } catch (e) { console.error(e); }
-  }
-
-  // Load saved flights
+  // Always load and show flights for everyone
   const { data, error } = await sb.from('flights').select('*').order('flight_date', { ascending: false });
   if (error) {
     document.getElementById('generalBody').innerHTML = `<tr><td colspan="6" style="color:#ef4444">Error: ${error.message}</td></tr>`;
-    return;
+  } else {
+    allFlights = data || [];
+    document.getElementById('generalBody').innerHTML = allFlights.length
+      ? allFlights.map(f => `
+          <tr>
+            <td>${f.flight_date || '—'}</td>
+            <td>${f.flight_number || '—'}</td>
+            <td><a class="reg-link" onclick="alert('Historial de ${f.registration}')">${f.registration || '—'}</a></td>
+            <td>${f.origin || '?'} → ${f.destination || '?'}</td>
+            <td>${f.category || '—'}</td>
+            <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
+          </tr>
+        `).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay vuelos registrados</td></tr>';
   }
-  allFlights = data || [];
-  document.getElementById('generalBody').innerHTML = allFlights.length
-    ? allFlights.map(f => `
-        <tr>
-          <td>${f.flight_date || '—'}</td>
-          <td>${f.flight_number || '—'}</td>
-          <td><a class="reg-link" onclick="alert('Historial de ${f.registration}')">${f.registration || '—'}</a></td>
-          <td>${f.origin || '?'} → ${f.destination || '?'}</td>
-          <td>${f.category || '—'}</td>
-          <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
-        </tr>
-      `).join('')
-    : '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay vuelos registrados</td></tr>';
+
+  // Logged-in extras
+  if (currentUser) {
+    statusEl.textContent = 'Sesión activa — puedes registrar vuelos';
+    addBtn.style.display = 'inline-block';
+
+    const token = sessionStorage.getItem('if_access_token');
+    if (token) {
+      try {
+        const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const orgData = await orgRes.json();
+        if (orgData.result && orgData.result.length) {
+          const orgId = orgData.result[0].id;
+          const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const acData = await acRes.json();
+          if (acData.result) {
+            const ifFlights = [];
+            for (const ac of acData.result.slice(0, 3)) {
+              const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
+                headers: { Authorization: 'Bearer ' + token }
+              });
+              const flData = await flRes.json();
+              if (flData.result && flData.result.items) {
+                ifFlights.push(...flData.result.items.map(f => ({ ...f, registration: ac.registration || ac.callsign })));
+              }
+            }
+            if (ifFlights.length) {
+              document.getElementById('ifFlightsCard').style.display = 'block';
+              document.getElementById('ifFlightsBody').innerHTML = ifFlights.map((f, i) => `
+                <tr>
+                  <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
+                  <td>${f.callsign || '—'}</td>
+                  <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+                  <td>${f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—'}</td>
+                  <td><button class="btn primary" onclick="fillFromIF(${i})">Usar</button></td>
+                </tr>
+              `).join('');
+              window.ifFlightsCache = ifFlights;
+            }
+          }
+        }
+      } catch (e) { console.error(e); }
+    }
+  } else {
+    statusEl.textContent = 'Bitácora pública — inicia sesión para registrar vuelos';
+    addBtn.style.display = 'none';
+    document.getElementById('ifFlightsCard').style.display = 'none';
+  }
 }
 
 function fillFromIF(index) {
@@ -504,6 +505,10 @@ function fillFromIF(index) {
 }
 
 async function saveFlight() {
+  if (!currentUser) {
+    alert('Debes iniciar sesión para registrar un vuelo');
+    return;
+  }
   const payload = {
     registration: document.getElementById('fReg').value.trim() || null,
     flight_number: document.getElementById('fNumber').value.trim() || null,
@@ -527,7 +532,6 @@ async function saveFlight() {
   loadBitacora();
 }
 
-// Placeholder functions for other views (keep existing logic if present)
 function loadFleet() { document.getElementById('fleetContent').innerHTML = '<p>Cargando flota…</p>'; }
 function loadHubs() { document.getElementById('hubsContent').innerHTML = '<div class="hub"><strong>MMLO</strong>Hub principal</div>'; }
 function updateGeneratorAccess() {
@@ -542,7 +546,6 @@ function updateGeneratorAccess() {
   }
 }
 
-// Check existing session on load
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session) {
     currentUser = session.user;
