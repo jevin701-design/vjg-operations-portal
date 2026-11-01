@@ -283,7 +283,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <p id="ifDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>Fecha</th><th>Matrícula (IF)</th><th>Ruta</th><th>Estado / Tiempo</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Matrícula</th><th>Ruta</th><th>Estado / Tiempo</th></tr></thead>
               <tbody id="ifFlightsBody"></tbody>
             </table>
           </div>
@@ -295,45 +295,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           </div>
           <div style="overflow-x:auto;margin-top:12px">
             <table>
-              <thead><tr><th>Fecha</th><th>VJT</th><th>Ruta</th><th>Tipo</th><th>Estado</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Ruta</th><th>Tiempo</th><th>Estado</th></tr></thead>
               <tbody id="historyBody"></tbody>
             </table>
-          </div>
-        </div>
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 style="margin:0">Vuelos registrados</h3>
-            <button class="btn primary" id="addFlightBtn" style="display:none" onclick="document.getElementById('addForm').style.display='block'">+ Registrar vuelo</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th><th>VJT</th><th>Matrícula</th><th>Ruta</th><th>Tipo</th><th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="generalBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="card" id="addForm" style="display:none">
-          <h3 style="margin-top:0">Registrar vuelo</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><label>Matrícula</label><input id="fReg" placeholder="IF-FVZV" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px"></div>
-            <div><label>Número VJT</label><input id="fNumber" placeholder="VJT 142" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px"></div>
-            <div><label>Origen</label><input id="fOrigin" placeholder="MMLO" maxlength="4" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px"></div>
-            <div><label>Destino</label><input id="fDest" placeholder="KJFK" maxlength="4" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px"></div>
-            <div><label>Tipo de uso</label>
-              <select id="fCategory" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px">
-                <option>Privada</option><option>Cargo</option><option>Chárter</option>
-              </select>
-            </div>
-            <div><label>Fecha</label><input type="date" id="fDate" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px"></div>
-            <div><label>Tiempo de vuelo (h)</label><input type="number" step="0.1" id="fTime" style="width:100%;padding:8px;background:#0d0d0d;border:1px solid #333;color:white;border-radius:6px"></div>
-          </div>
-          <div style="margin-top:12px;display:flex;gap:8px">
-            <button class="btn primary" onclick="saveFlight()">Guardar</button>
-            <button class="btn" onclick="document.getElementById('addForm').style.display='none'">Cancelar</button>
           </div>
         </div>
       </div>
@@ -382,7 +346,7 @@ let currentLang = 'es';
 let currentUser = null;
 let isMember = false;
 let isAdmin = false;
-let allFlights = [];
+let ifFlightsCache = [];
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -528,19 +492,22 @@ function restoreIFSession() {
 }
 
 function showHistory(reg) {
-  const flights = allFlights.filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
+  const flights = ifFlightsCache.filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
   document.getElementById('historyTitle').textContent = 'Historial de ' + reg;
   document.getElementById('historyBody').innerHTML = flights.length
-    ? flights.map(f => `
-        <tr>
-          <td>${f.flight_date || '—'}</td>
-          <td>${f.flight_number || '—'}</td>
-          <td>${f.origin || '?'} → ${f.destination || '?'}</td>
-          <td>${f.category || '—'}</td>
-          <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
-        </tr>
-      `).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin vuelos registrados para esta matrícula</td></tr>';
+    ? flights.map(f => {
+        const isActive = !f.actualArrivalUtc;
+        const time = isActive ? 'En vuelo' : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
+        return `
+          <tr>
+            <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
+            <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+            <td>${time}</td>
+            <td><span class="pill ${isActive ? 'active' : 'closed'}">${isActive ? 'En vuelo' : 'Completado'}</span></td>
+          </tr>
+        `;
+      }).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin vuelos para esta matrícula</td></tr>';
   document.getElementById('historyCard').style.display = 'block';
 }
 
@@ -552,32 +519,11 @@ async function safeJson(res) {
 
 async function loadBitacora() {
   const statusEl = document.getElementById('statusTextBit');
-  const addBtn = document.getElementById('addFlightBtn');
   const ifCard = document.getElementById('ifFlightsCard');
   const ifDebug = document.getElementById('ifDebug');
 
-  const { data, error } = await sb.from('flights').select('*').order('flight_date', { ascending: false });
-  if (error) {
-    document.getElementById('generalBody').innerHTML = `<tr><td colspan="6" style="color:#ef4444">Error: ${error.message}</td></tr>`;
-  } else {
-    allFlights = data || [];
-    document.getElementById('generalBody').innerHTML = allFlights.length
-      ? allFlights.map(f => `
-          <tr>
-            <td>${f.flight_date || '—'}</td>
-            <td>${f.flight_number || '—'}</td>
-            <td><a class="reg-link" onclick="showHistory('${f.registration || ''}')">${f.registration || '—'}</a></td>
-            <td>${f.origin || '?'} → ${f.destination || '?'}</td>
-            <td>${f.category || '—'}</td>
-            <td><span class="pill ${f.status || 'pending'}">${f.status || 'pending'}</span></td>
-          </tr>
-        `).join('')
-      : '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No hay vuelos registrados</td></tr>';
-  }
-
   if (currentUser) {
-    statusEl.textContent = 'Sesión activa — puedes registrar vuelos';
-    addBtn.style.display = 'inline-block';
+    statusEl.textContent = 'Sesión activa';
     ifCard.style.display = 'block';
 
     const token = localStorage.getItem('if_access_token');
@@ -621,6 +567,7 @@ async function loadBitacora() {
         }
       }
 
+      ifFlightsCache = ifFlights;
       ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
 
       if (ifFlights.length) {
@@ -629,10 +576,11 @@ async function loadBitacora() {
           const statusLabel = isActive
             ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
             : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
+          const reg = f.registration || f.callsign || '—';
           return `
             <tr style="${isActive ? 'background:#14372c' : ''}">
               <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-              <td style="font-weight:700">${f.registration || f.callsign || '—'}</td>
+              <td><a class="reg-link" onclick="showHistory('${reg}')">${reg}</a></td>
               <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
               <td>${statusLabel}</td>
             </tr>
@@ -647,39 +595,9 @@ async function loadBitacora() {
       document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
     }
   } else {
-    statusEl.textContent = 'Bitácora pública — inicia sesión para registrar vuelos';
-    addBtn.style.display = 'none';
+    statusEl.textContent = 'Bitácora pública — inicia sesión para ver vuelos de IF';
     ifCard.style.display = 'none';
   }
-}
-
-async function saveFlight() {
-  if (!currentUser) {
-    showToast('Debes iniciar sesión para registrar un vuelo', true);
-    return;
-  }
-  const payload = {
-    registration: document.getElementById('fReg').value.trim() || null,
-    flight_number: document.getElementById('fNumber').value.trim() || null,
-    origin: document.getElementById('fOrigin').value.trim().toUpperCase() || null,
-    destination: document.getElementById('fDest').value.trim().toUpperCase() || null,
-    category: document.getElementById('fCategory').value,
-    flight_date: document.getElementById('fDate').value || null,
-    flight_time_hours: parseFloat(document.getElementById('fTime').value) || null,
-    status: 'closed'
-  };
-  if (!payload.flight_number || !payload.registration) {
-    showToast('Matrícula y número de vuelo son obligatorios', true);
-    return;
-  }
-  const { error } = await sb.from('flights').insert(payload);
-  if (error) {
-    showToast('Error: ' + error.message, true);
-    return;
-  }
-  document.getElementById('addForm').style.display = 'none';
-  showToast('Vuelo registrado');
-  loadBitacora();
 }
 
 function loadFleet() { document.getElementById('fleetContent').innerHTML = '<p>Cargando flota…</p>'; }
