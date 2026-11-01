@@ -71,10 +71,30 @@ input, select { width: 100%; padding: 8px; background: var(--panel2); border: 1p
       <p id="statusText" style="margin:0;color:var(--muted)">Verificando sesión…</p>
     </div>
 
+    <!-- Vuelos recientes de Infinite Flight -->
+    <div class="card" id="ifFlightsCard" style="display:none">
+      <h3 style="margin-top:0">Vuelos recientes de Infinite Flight</h3>
+      <p style="color:var(--muted);font-size:13px">Selecciona un vuelo para registrarlos en la Bitácora de VJG.</p>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Callsign</th>
+              <th>Ruta</th>
+              <th>Tiempo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ifFlightsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h3 style="margin:0">Vuelos</h3>
-        <button class="btn primary" id="addFlightBtn" style="display:none">+ Registrar vuelo reciente</button>
+        <button class="btn primary" id="addFlightBtn" style="display:none">+ Registrar vuelo manual</button>
       </div>
       <div style="overflow-x:auto">
         <table>
@@ -163,18 +183,16 @@ input, select { width: 100%; padding: 8px; background: var(--panel2); border: 1p
 
 <script>
 // ============================================================
-// CONFIGURACIÓN SUPABASE — PEGA TU ANON KEY AQUÍ
+// CONFIGURACIÓN SUPABASE
 // ============================================================
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i'; // ← Reemplaza esto
+const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allFlights = [];
 let currentUser = null;
 
-// La sesión de Infinite Flight se gestiona en la página principal.
-// Aquí solo verificamos si ya existe una sesión activa en Supabase.
 async function checkSession() {
   try {
     const { data: { session } } = await sb.auth.getSession();
@@ -182,6 +200,7 @@ async function checkSession() {
       currentUser = session.user;
       document.getElementById('statusText').textContent = `Sesión activa (usuario: ${currentUser.email || currentUser.id})`;
       document.getElementById('addFlightBtn').style.display = 'inline-block';
+      loadIFFlights();
     } else {
       document.getElementById('statusText').innerHTML = 'No hay sesión activa. <strong>Inicia sesión desde la página principal</strong> con Infinite Flight.';
       document.getElementById('addFlightBtn').style.display = 'none';
@@ -190,6 +209,71 @@ async function checkSession() {
     document.getElementById('statusText').textContent = 'Error de conexión a Supabase';
   }
   await loadFlights();
+}
+
+async function loadIFFlights() {
+  const token = sessionStorage.getItem('if_access_token');
+  if (!token) {
+    document.getElementById('ifFlightsCard').style.display = 'none';
+    return;
+  }
+
+  try {
+    // Intenta obtener organizaciones y luego vuelos de aeronaves
+    const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const orgData = await orgRes.json();
+    if (!orgData.result || !orgData.result.length) return;
+
+    // Por simplicidad, toma la primera org y sus aeronaves
+    const orgId = orgData.result[0].id;
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const acData = await acRes.json();
+    if (!acData.result) return;
+
+    const ifFlights = [];
+    for (const ac of acData.result.slice(0, 3)) { // limita a 3 aeronaves
+      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const flData = await flRes.json();
+      if (flData.result && flData.result.items) {
+        ifFlights.push(...flData.result.items.map(f => ({ ...f, registration: ac.registration || ac.callsign })));
+      }
+    }
+
+    if (ifFlights.length) {
+      document.getElementById('ifFlightsCard').style.display = 'block';
+      const body = document.getElementById('ifFlightsBody');
+      body.innerHTML = ifFlights.map((f, i) => `
+        <tr>
+          <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
+          <td>${f.callsign || '—'}</td>
+          <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+          <td>${f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—'}</td>
+          <td><button class="btn primary" data-i="${i}" onclick="registerIFFlight(${i})">Registrar</button></td>
+        </tr>
+      `).join('');
+      window.ifFlightsCache = ifFlights;
+    }
+  } catch (e) {
+    console.error('Error cargando vuelos de IF:', e);
+  }
+}
+
+function registerIFFlight(index) {
+  const f = window.ifFlightsCache[index];
+  if (!f) return;
+  document.getElementById('addForm').style.display = 'block';
+  document.getElementById('fReg').value = f.registration || '';
+  document.getElementById('fOrigin').value = f.originIcao || '';
+  document.getElementById('fDest').value = f.destinationIcao || '';
+  document.getElementById('fTime').value = f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) : '';
+  document.getElementById('fDate').value = f.actualDepartureUtc ? f.actualDepartureUtc.split('T')[0] : '';
+  // El usuario completa el resto y guarda
 }
 
 async function loadFlights() {
