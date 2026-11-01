@@ -93,8 +93,8 @@ input[type="email"], input[type="password"] {
   border: 1px solid #333; color: white; border-radius: 6px;
 }
 .checkbox { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 14px; }
-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-th, td { padding: 10px; text-align: left; border-bottom: 1px solid #2a2a2a; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
 .status-dot {
   display: inline-block; width: 10px; height: 10px;
   border-radius: 50%; margin-right: 6px;
@@ -114,6 +114,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 }
 .reg-link { color: var(--red); font-weight: 700; cursor: pointer; text-decoration: none; }
 .reg-link:hover { text-decoration: underline; }
+.reg-link.selected { color: #22c55e; font-weight: 800; }
 .pill { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 99px; background: #2a2a2a; display: inline-block; }
 .pill.closed { background: #14372c; color: #22c55e; }
 .pill.active { background: #391a25; color: var(--red); }
@@ -279,11 +280,21 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <p id="statusTextBit" style="margin:0;color:var(--muted)">Bitácora pública</p>
         </div>
         <div class="card" id="ifFlightsCard" style="display:none;margin-bottom:16px">
-          <h3 style="margin-top:0">Vuelos recientes de Infinite Flight</h3>
+          <h3 style="margin-top:0" id="ifTitle" data-es="Vuelos recientes de Infinite Flight" data-en="Recent Infinite Flight flights">Vuelos recientes de Infinite Flight</h3>
           <p id="ifDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>Fecha</th><th>Matrícula</th><th>Ruta</th><th>Estado / Tiempo</th></tr></thead>
+              <thead>
+                <tr>
+                  <th data-es="Fecha" data-en="Date">Fecha</th>
+                  <th data-es="Fabricante" data-en="Manufacturer">Fabricante</th>
+                  <th data-es="Matrícula" data-en="Registration">Matrícula</th>
+                  <th data-es="Ruta" data-en="Route">Ruta</th>
+                  <th data-es="Tipo" data-en="Type">Tipo</th>
+                  <th data-es="Estado / Tiempo" data-en="Status / Time">Estado / Tiempo</th>
+                  <th data-es="Piloto" data-en="Pilot">Piloto</th>
+                </tr>
+              </thead>
               <tbody id="ifFlightsBody"></tbody>
             </table>
           </div>
@@ -291,11 +302,25 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
         <div class="card" id="historyCard" style="display:none;margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <h3 style="margin:0" id="historyTitle">Historial</h3>
-            <button class="btn" onclick="document.getElementById('historyCard').style.display='none'">Cerrar</button>
+            <button class="btn" onclick="closeHistory()" data-es="Cerrar" data-en="Close">Cerrar</button>
           </div>
           <div style="overflow-x:auto;margin-top:12px">
             <table>
-              <thead><tr><th>Fecha</th><th>Ruta</th><th>Tiempo</th><th>Estado</th></tr></thead>
+              <thead>
+                <tr>
+                  <th data-es="Fecha" data-en="Date">Fecha</th>
+                  <th data-es="Ruta" data-en="Route">Ruta</th>
+                  <th data-es="Tipo" data-en="Type">Tipo</th>
+                  <th data-es="Estado" data-en="Status">Estado</th>
+                  <th data-es="MLTOW" data-en="MLTOW">MLTOW</th>
+                  <th data-es="MLW" data-en="MLW">MLW</th>
+                  <th data-es="Carga total" data-en="Total payload">Carga total</th>
+                  <th data-es="Combustible (kg)" data-en="Fuel (kg)">Combustible (kg)</th>
+                  <th data-es="Carga (kg)" data-en="Cargo (kg)">Carga (kg)</th>
+                  <th data-es="Comb. drenado" data-en="Fuel drained">Comb. drenado</th>
+                  <th data-es="Comb. usado" data-en="Fuel used">Comb. usado</th>
+                </tr>
+              </thead>
               <tbody id="historyBody"></tbody>
             </table>
           </div>
@@ -347,6 +372,8 @@ let currentUser = null;
 let isMember = false;
 let isAdmin = false;
 let ifFlightsCache = [];
+let selectedReg = null;
+let aircraftMap = {};
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -366,6 +393,7 @@ function toggleLang() {
     if (val) el.textContent = val;
   });
   document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
+  if (selectedReg) showHistory(selectedReg);
 }
 
 function showView(name) {
@@ -491,23 +519,48 @@ function restoreIFSession() {
   }
 }
 
+function closeHistory() {
+  document.getElementById('historyCard').style.display = 'none';
+  selectedReg = null;
+  document.querySelectorAll('.reg-link').forEach(el => el.classList.remove('selected'));
+}
+
 function showHistory(reg) {
-  const flights = ifFlightsCache.filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
-  document.getElementById('historyTitle').textContent = 'Historial de ' + reg;
+  selectedReg = reg;
+  document.querySelectorAll('.reg-link').forEach(el => {
+    el.classList.toggle('selected', el.textContent.trim().toUpperCase() === reg.toUpperCase());
+  });
+
+  const ac = aircraftMap[reg.toUpperCase()] || {};
+  const acName = ac.manufacturer && ac.model ? `${ac.manufacturer} ${ac.model}` : (ac.model || ac.manufacturer || 'Aeronave');
+  document.getElementById('historyTitle').textContent = `Historial de ${reg} — ${acName}`;
+
+  const flights = ifFlightsCache
+    .filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase())
+    .sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
+
   document.getElementById('historyBody').innerHTML = flights.length
     ? flights.map(f => {
         const isActive = !f.actualArrivalUtc;
-        const time = isActive ? 'En vuelo' : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
+        const statusText = isActive ? t('En vuelo', 'In flight') : t('Completado', 'Completed');
+        const statusClass = isActive ? 'active' : 'closed';
         return `
           <tr>
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
-            <td>${time}</td>
-            <td><span class="pill ${isActive ? 'active' : 'closed'}">${isActive ? 'En vuelo' : 'Completado'}</span></td>
+            <td>${f.category || '—'}</td>
+            <td><span class="pill ${statusClass}">${statusText}</span></td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
           </tr>
         `;
       }).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin vuelos para esta matrícula</td></tr>';
+    : `<tr><td colspan="11" style="text-align:center;color:var(--muted)">${t('Sin vuelos para esta matrícula', 'No flights for this registration')}</td></tr>`;
   document.getElementById('historyCard').style.display = 'block';
 }
 
@@ -523,13 +576,13 @@ async function loadBitacora() {
   const ifDebug = document.getElementById('ifDebug');
 
   if (currentUser) {
-    statusEl.textContent = 'Sesión activa';
+    statusEl.textContent = t('Sesión activa', 'Active session');
     ifCard.style.display = 'block';
 
     const token = localStorage.getItem('if_access_token');
     if (!token) {
-      ifDebug.textContent = 'Reconecta con Infinite Flight';
-      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+      ifDebug.textContent = t('Reconecta con Infinite Flight', 'Reconnect with Infinite Flight');
+      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
       return;
     }
 
@@ -541,8 +594,8 @@ async function loadBitacora() {
 
       if (orgData.error || !orgData.result || !orgData.result.length || orgRes.status === 401) {
         localStorage.removeItem('if_access_token');
-        ifDebug.textContent = 'Token vencido — reconecta';
-        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
+        ifDebug.textContent = t('Token vencido — reconecta', 'Token expired — reconnect');
+        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
         return;
       }
 
@@ -552,6 +605,16 @@ async function loadBitacora() {
       });
       const acData = await safeJson(acRes);
       const aircraftList = acData.result || [];
+      aircraftMap = {};
+      aircraftList.forEach(ac => {
+        if (ac.registration) {
+          aircraftMap[ac.registration.toUpperCase()] = {
+            manufacturer: ac.manufacturer || ac.aircraftType || '—',
+            model: ac.model || ac.aircraftName || '—'
+          };
+        }
+      });
+
       const ifFlights = [];
       let activeCount = 0;
 
@@ -561,12 +624,19 @@ async function loadBitacora() {
         });
         const flData = await safeJson(flRes);
         if (flData.result && flData.result.items) {
-          const items = flData.result.items.map(f => ({ ...f, registration: ac.registration || f.callsign }));
+          const items = flData.result.items.map(f => ({
+            ...f,
+            registration: ac.registration || f.callsign,
+            manufacturer: ac.manufacturer || ac.aircraftType || '—',
+            model: ac.model || '—',
+            pilotName: f.pilotName || f.username || f.pilot || '—'
+          }));
           ifFlights.push(...items);
           activeCount += items.filter(f => !f.actualArrivalUtc).length;
         }
       }
 
+      ifFlights.sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
       ifFlightsCache = ifFlights;
       ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
 
@@ -577,25 +647,29 @@ async function loadBitacora() {
             ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
             : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
           const reg = f.registration || f.callsign || '—';
+          const isSelected = selectedReg && reg.toUpperCase() === selectedReg.toUpperCase();
           return `
             <tr style="${isActive ? 'background:#14372c' : ''}">
               <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-              <td><a class="reg-link" onclick="showHistory('${reg}')">${reg}</a></td>
+              <td>${f.manufacturer || '—'}</td>
+              <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
               <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+              <td>${f.category || '—'}</td>
               <td>${statusLabel}</td>
+              <td>${f.pilotName || '—'}</td>
             </tr>
           `;
         }).join('');
       } else {
-        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF</td></tr>';
+        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF</td></tr>';
       }
     } catch (e) {
       localStorage.removeItem('if_access_token');
       ifDebug.textContent = 'Error — reconecta con IF';
-      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
+      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
     }
   } else {
-    statusEl.textContent = 'Bitácora pública — inicia sesión para ver vuelos de IF';
+    statusEl.textContent = t('Bitácora pública — inicia sesión para ver vuelos de IF', 'Public logbook — sign in to see IF flights');
     ifCard.style.display = 'none';
   }
 }
