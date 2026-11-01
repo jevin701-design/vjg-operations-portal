@@ -472,7 +472,7 @@ async function handleIFCallback(){
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
       document.getElementById('loginBtn').onclick = logout;
       showToast('Conectado con Infinite Flight');
-      showView('home');
+      showView('bitacora');
     } else {
       showToast('Error token: ' + JSON.stringify(tokenData), true);
     }
@@ -546,12 +546,8 @@ function showHistory(reg) {
 
 async function safeJson(res) {
   const text = await res.text();
-  if (!text) return { error: 'Respuesta vacía', status: res.status };
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    return { error: 'JSON inválido', status: res.status, raw: text.slice(0, 200) };
-  }
+  if (!text) return { error: 'empty', status: res.status };
+  try { return JSON.parse(text); } catch { return { error: 'badjson', status: res.status }; }
 }
 
 async function loadBitacora() {
@@ -586,8 +582,8 @@ async function loadBitacora() {
 
     const token = localStorage.getItem('if_access_token');
     if (!token) {
-      ifDebug.textContent = 'No hay token de Infinite Flight. Vuelve a conectar con IF.';
-      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin token de IF</td></tr>';
+      ifDebug.textContent = 'Reconecta con Infinite Flight';
+      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
       return;
     }
 
@@ -596,9 +592,11 @@ async function loadBitacora() {
         headers: { Authorization: 'Bearer ' + token }
       });
       const orgData = await safeJson(orgRes);
-      if (orgData.error || !orgData.result || !orgData.result.length) {
-        ifDebug.textContent = `Error organizaciones (status ${orgData.status || orgRes.status}): ${orgData.error || 'sin resultado'}`;
-        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="color:#ef4444">Error al obtener organizaciones. Vuelve a conectar con IF.</td></tr>';
+
+      if (orgData.error || !orgData.result || !orgData.result.length || orgRes.status === 401) {
+        localStorage.removeItem('if_access_token');
+        ifDebug.textContent = 'Token vencido — reconecta';
+        document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
         return;
       }
 
@@ -644,9 +642,9 @@ async function loadBitacora() {
         document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF</td></tr>';
       }
     } catch (e) {
-      console.error(e);
-      ifDebug.textContent = 'Error al cargar vuelos de IF: ' + e.message;
-      document.getElementById('ifFlightsBody').innerHTML = `<tr><td colspan="4" style="color:#ef4444">${e.message}</td></tr>`;
+      localStorage.removeItem('if_access_token');
+      ifDebug.textContent = 'Error — reconecta con IF';
+      document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="4" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
     }
   } else {
     statusEl.textContent = 'Bitácora pública — inicia sesión para registrar vuelos';
