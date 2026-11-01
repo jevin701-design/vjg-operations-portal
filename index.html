@@ -118,7 +118,6 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 .pill.closed { background: #14372c; color: #22c55e; }
 .pill.active { background: #391a25; color: var(--red); }
 .pill.pending { background: #3a2a10; color: #eab308; }
-/* Toast */
 .toast {
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
   background: #1e1e1e; border: 1px solid var(--green); color: white;
@@ -283,7 +282,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <h3 style="margin-top:0">Vuelos recientes de Infinite Flight</h3>
           <div style="overflow-x:auto">
             <table>
-              <thead><tr><th>Fecha</th><th>Callsign</th><th>Ruta</th><th>Tiempo</th><th></th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Callsign</th><th>Ruta</th><th>Estado / Tiempo</th><th></th></tr></thead>
               <tbody id="ifFlightsBody"></tbody>
             </table>
           </div>
@@ -568,19 +567,25 @@ async function loadBitacora() {
             }
             if (ifFlights.length) {
               document.getElementById('ifFlightsCard').style.display = 'block';
-              document.getElementById('ifFlightsBody').innerHTML = ifFlights.map((f, i) => `
-                <tr>
-                  <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-                  <td>${f.callsign || '—'}</td>
-                  <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
-                  <td>${f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—'}</td>
-                  <td><button class="btn primary" onclick="fillFromIF(${i})">Usar</button></td>
-                </tr>
-              `).join('');
+              document.getElementById('ifFlightsBody').innerHTML = ifFlights.map((f, i) => {
+                const isActive = !f.actualArrivalUtc;
+                const statusLabel = isActive
+                  ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
+                  : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
+                return `
+                  <tr style="${isActive ? 'background:#14372c' : ''}">
+                    <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
+                    <td>${f.callsign || '—'}</td>
+                    <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+                    <td>${statusLabel}</td>
+                    <td><button class="btn primary" onclick="fillFromIF(${i})">Usar</button></td>
+                  </tr>
+                `;
+              }).join('');
               window.ifFlightsCache = ifFlights;
             } else {
               document.getElementById('ifFlightsCard').style.display = 'block';
-              document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF (el vuelo actual aún no aparece hasta que termina)</td></tr>';
+              document.getElementById('ifFlightsBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No hay vuelos recientes en IF</td></tr>';
             }
           }
         }
@@ -647,7 +652,6 @@ function updateGeneratorAccess() {
   }
 }
 
-// Init
 sb.auth.getSession().then(({ data: { session } }) => {
   if (session) {
     currentUser = session.user;
