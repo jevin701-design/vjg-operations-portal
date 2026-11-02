@@ -923,18 +923,46 @@ async function loadBitacora() {
   ifCard.style.display = 'block';
 
   const canSeeLive = isAdmin || (ifConnected && isMember);
-  if (!canSeeLive) {
-    statusEl.textContent = t('Bitácora visible — únete a VJG y conecta con IF para datos en vivo', 'Logbook visible — join VJG and connect with IF for live data');
-    ifDebug.textContent = '';
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center"><a class="btn primary" href="https://live.infiniteflight.com/organization/${VJG_ORG_ID}" target="_blank">Únete a VistaJet Group</a></td></tr>`;
-    return;
-  }
-
   const token = localStorage.getItem('if_access_token');
-  if (!token) {
-    statusEl.textContent = t('Admin — conecta con IF para datos en vivo', 'Admin — connect with IF for live data');
-    ifDebug.textContent = '';
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>`;
+
+  // No live access: load from cache
+  if (!canSeeLive || !token) {
+    const { data: cached } = await sb.from('bitacora_cache').select('*').order('actual_departure_utc', { ascending: false }).limit(50);
+    if (cached && cached.length) {
+      statusEl.textContent = t('Bitácora (datos guardados)', 'Logbook (saved data)');
+      ifDebug.textContent = `${cached.length} vuelos`;
+      body.innerHTML = cached.map(f => {
+        const isActive = !f.actual_arrival_utc;
+        const statusHtml = f.status_display
+          ? `<div class="status-ticker ${isActive ? '' : 'completed'}"><span>${f.status_display}</span></div>`
+          : (isActive ? 'EN VUELO' : 'Completado');
+        return `
+          <tr style="${isActive ? 'background:#14372c' : ''}">
+            <td>${f.actual_departure_utc ? new Date(f.actual_departure_utc).toLocaleDateString() : '—'}</td>
+            <td>${f.avion || '—'}</td>
+            <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration || '—'}</a></td>
+            <td>${f.origin_icao || '?'} → ${f.destination_icao || '?'}</td>
+            <td>${f.usage_type || '—'}</td>
+            <td>${statusHtml}</td>
+            <td>${f.pilot_name || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+      ifFlightsCache = cached.map(f => ({
+        registration: f.registration,
+        avion: f.avion,
+        originIcao: f.origin_icao,
+        destinationIcao: f.destination_icao,
+        usage: f.usage_type,
+        pilotName: f.pilot_name,
+        actualDepartureUtc: f.actual_departure_utc,
+        actualArrivalUtc: f.actual_arrival_utc,
+        flightTimeMinutes: f.flight_time_minutes
+      }));
+    } else {
+      statusEl.textContent = t('Sin datos de bitácora', 'No logbook data');
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted)">${t('Aún no hay vuelos guardados', 'No saved flights yet')}</td></tr>`;
+    }
     return;
   }
 
@@ -1011,6 +1039,23 @@ async function loadBitacora() {
     });
     for (const [reg, txt] of Object.entries(statusByReg)) {
       sb.from('fleet').update({ status_display: txt }).eq('registration', reg).then(() => {});
+    }
+    // Persist flights to public cache
+    const rows = ifFlights.slice(0, 50).map(f => ({
+      id: f.id || `${f.registration}-${f.actualDepartureUtc}`,
+      registration: f.registration,
+      avion: f.avion,
+      origin_icao: f.originIcao,
+      destination_icao: f.destinationIcao,
+      usage_type: f.usage,
+      pilot_name: f.pilotName,
+      actual_departure_utc: f.actualDepartureUtc,
+      actual_arrival_utc: f.actualArrivalUtc,
+      flight_time_minutes: f.flightTimeMinutes,
+      status_display: statusByReg[(f.registration || '').toUpperCase()] || ''
+    }));
+    if (rows.length) {
+      sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
     }
     ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
 
