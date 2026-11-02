@@ -88,8 +88,8 @@ h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 16px; font-weight: 800; }
   max-width: 420px; margin: 60px auto; background: var(--panel);
   padding: 32px; border-radius: 12px; border: 1px solid #333;
 }
-input[type="email"], input[type="password"] {
-  width: 100%; padding: 12px; margin: 8px 0; background: #0d0d0d;
+input[type="email"], input[type="password"], input[type="text"], select {
+  width: 100%; padding: 8px; margin: 4px 0; background: #0d0d0d;
   border: 1px solid #333; color: white; border-radius: 6px;
 }
 .checkbox { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 14px; }
@@ -229,6 +229,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
                   <th data-es="Modelo" data-en="Model">Modelo</th>
                   <th data-es="Tipo de uso" data-en="Usage type">Tipo de uso</th>
                   <th data-es="Estado" data-en="Status">Estado</th>
+                  <th data-es="Acciones" data-en="Actions">Acciones</th>
                 </tr>
               </thead>
               <tbody id="fleetBody"></tbody>
@@ -306,7 +307,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
               <thead>
                 <tr>
                   <th data-es="Fecha" data-en="Date">Fecha</th>
-                  <th data-es="Fabricante" data-en="Manufacturer">Fabricante</th>
+                  <th data-es="Avión" data-en="Aircraft">Avión</th>
                   <th data-es="Matrícula" data-en="Registration">Matrícula</th>
                   <th data-es="Ruta" data-en="Route">Ruta</th>
                   <th data-es="Tipo" data-en="Type">Tipo</th>
@@ -546,14 +547,22 @@ function closeHistory() {
   document.querySelectorAll('.reg-link').forEach(el => el.classList.remove('selected'));
 }
 
+function getFleetInfo(reg) {
+  if (!reg) return { manufacturer: '—', model: '—', usage: '—', avion: '—' };
+  const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
+  if (!ac) return { manufacturer: '—', model: '—', usage: '—', avion: '—' };
+  const avion = ac.model && ac.model !== '—' ? ac.model : (ac.manufacturer && ac.manufacturer !== '—' ? ac.manufacturer : '—');
+  return { manufacturer: ac.manufacturer || '—', model: ac.model || '—', usage: ac.usage || '—', avion };
+}
+
 function showHistory(reg) {
   selectedReg = reg;
   document.querySelectorAll('.reg-link').forEach(el => {
     el.classList.toggle('selected', el.textContent.trim().toUpperCase() === reg.toUpperCase());
   });
 
-  const ac = aircraftMap[reg.toUpperCase()] || {};
-  const acName = ac.manufacturer && ac.model ? `${ac.manufacturer} ${ac.model}` : (ac.model || ac.manufacturer || 'Aeronave');
+  const info = getFleetInfo(reg);
+  const acName = info.avion !== '—' ? info.avion : 'Aeronave';
   document.getElementById('historyTitle').textContent = `Historial de ${reg} — ${acName}`;
 
   const flights = ifFlightsCache
@@ -569,7 +578,7 @@ function showHistory(reg) {
           <tr>
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
-            <td>${f.category || '—'}</td>
+            <td>${info.usage}</td>
             <td><span class="pill ${statusClass}">${statusText}</span></td>
             <td>—</td>
             <td>—</td>
@@ -594,18 +603,51 @@ async function safeJson(res) {
 function renderFleet() {
   const body = document.getElementById('fleetBody');
   if (!fleetCache.length) {
-    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
     return;
   }
-  body.innerHTML = fleetCache.map(ac => `
+  body.innerHTML = fleetCache.map((ac, idx) => `
     <tr>
       <td style="font-weight:700">${ac.registration || '—'}</td>
-      <td>${ac.manufacturer || '—'}</td>
-      <td>${ac.model || '—'}</td>
-      <td>${ac.usage || '—'}</td>
+      <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:120px">` : (ac.manufacturer || '—')}</td>
+      <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:100px">` : (ac.model || '—')}</td>
+      <td>${ac.editing ? `<select id="use_${idx}"><option value="Privada" ${ac.usage==='Privada'?'selected':''}>Privada</option><option value="Cargo" ${ac.usage==='Cargo'?'selected':''}>Cargo</option><option value="Chárter" ${ac.usage==='Chárter'?'selected':''}>Chárter</option></select>` : (ac.usage || '—')}</td>
       <td><span class="pill ${ac.status === 'flying' ? 'active' : 'closed'}">${ac.status === 'flying' ? t('En vuelo', 'In flight') : t('Disponible', 'Available')}</span></td>
+      <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button>`) : ''}</td>
     </tr>
   `).join('');
+}
+
+function editFleet(idx) {
+  fleetCache[idx].editing = true;
+  renderFleet();
+}
+
+async function saveFleetEdit(idx) {
+  const ac = fleetCache[idx];
+  const manufacturer = document.getElementById('mfr_' + idx).value.trim();
+  const model = document.getElementById('mdl_' + idx).value.trim();
+  const usage = document.getElementById('use_' + idx).value;
+
+  const payload = {
+    registration: ac.registration,
+    manufacturer: manufacturer || null,
+    model: model || null,
+    usage_type: usage
+  };
+
+  const { error } = await sb.from('fleet').upsert(payload, { onConflict: 'registration' });
+  if (error) {
+    showToast('Error: ' + error.message, true);
+    return;
+  }
+
+  ac.manufacturer = manufacturer || '—';
+  ac.model = model || '—';
+  ac.usage = usage;
+  ac.editing = false;
+  renderFleet();
+  showToast('Flota actualizada');
 }
 
 async function loadFleet() {
@@ -614,14 +656,14 @@ async function loadFleet() {
 
   if (!currentUser) {
     debug.textContent = t('Inicia sesión con Infinite Flight para ver la flota', 'Sign in with Infinite Flight to see the fleet');
-    body.innerHTML = '<tr><td colspan="5" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
     return;
   }
 
   const token = localStorage.getItem('if_access_token');
   if (!token) {
     debug.textContent = t('Reconecta con Infinite Flight', 'Reconnect with Infinite Flight');
-    body.innerHTML = '<tr><td colspan="5" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
     return;
   }
 
@@ -634,7 +676,7 @@ async function loadFleet() {
     if (orgData.error || !orgData.result || !orgData.result.length || orgRes.status === 401) {
       localStorage.removeItem('if_access_token');
       debug.textContent = t('Token vencido — reconecta', 'Token expired — reconnect');
-      body.innerHTML = '<tr><td colspan="5" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
       return;
     }
 
@@ -645,19 +687,28 @@ async function loadFleet() {
     const acData = await safeJson(acRes);
     const aircraftList = acData.result || [];
 
-    fleetCache = aircraftList.map(ac => ({
-      registration: ac.registration || '—',
-      manufacturer: ac.manufacturer || ac.aircraftType || '—',
-      model: ac.model || ac.aircraftName || '—',
-      usage: ac.usageType || ac.category || '—',
-      status: ac.isFlying ? 'flying' : 'available'
-    }));
+    const { data: dbFleet } = await sb.from('fleet').select('*');
+    const dbMap = {};
+    (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
+
+    fleetCache = aircraftList.map(ac => {
+      const reg = ac.registration || '—';
+      const db = dbMap[reg.toUpperCase()] || {};
+      return {
+        registration: reg,
+        manufacturer: db.manufacturer || '—',
+        model: db.model || '—',
+        usage: db.usage_type || '—',
+        status: ac.isFlying ? 'flying' : 'available',
+        editing: false
+      };
+    });
 
     debug.textContent = `${t('Aeronaves en la organización', 'Aircraft in organization')}: ${fleetCache.length}`;
     renderFleet();
   } catch (e) {
     debug.textContent = 'Error: ' + e.message;
-    body.innerHTML = '<tr><td colspan="5" style="color:#ef4444">Error al cargar la flota</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" style="color:#ef4444">Error al cargar la flota</td></tr>';
   }
 }
 
@@ -696,15 +747,10 @@ async function loadBitacora() {
       });
       const acData = await safeJson(acRes);
       const aircraftList = acData.result || [];
-      aircraftMap = {};
-      aircraftList.forEach(ac => {
-        if (ac.registration) {
-          aircraftMap[ac.registration.toUpperCase()] = {
-            manufacturer: ac.manufacturer || ac.aircraftType || '—',
-            model: ac.model || ac.aircraftName || '—'
-          };
-        }
-      });
+
+      const { data: dbFleet } = await sb.from('fleet').select('*');
+      const dbMap = {};
+      (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
 
       const ifFlights = [];
       let activeCount = 0;
@@ -715,11 +761,13 @@ async function loadBitacora() {
         });
         const flData = await safeJson(flRes);
         if (flData.result && flData.result.items) {
+          const reg = ac.registration || '—';
+          const db = dbMap[reg.toUpperCase()] || {};
           const items = flData.result.items.map(f => ({
             ...f,
-            registration: ac.registration || f.callsign,
-            manufacturer: ac.manufacturer || ac.aircraftType || '—',
-            model: ac.model || '—',
+            registration: reg,
+            avion: db.model || db.manufacturer || '—',
+            usage: db.usage_type || '—',
             pilotName: f.pilotName || f.username || f.pilot || '—'
           }));
           ifFlights.push(...items);
@@ -737,15 +785,15 @@ async function loadBitacora() {
           const statusLabel = isActive
             ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
             : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
-          const reg = f.registration || f.callsign || '—';
+          const reg = f.registration || '—';
           const isSelected = selectedReg && reg.toUpperCase() === selectedReg.toUpperCase();
           return `
             <tr style="${isActive ? 'background:#14372c' : ''}">
               <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-              <td>${f.manufacturer || '—'}</td>
+              <td>${f.avion || '—'}</td>
               <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
               <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
-              <td>${f.category || '—'}</td>
+              <td>${f.usage || '—'}</td>
               <td>${statusLabel}</td>
               <td>${f.pilotName || '—'}</td>
             </tr>
