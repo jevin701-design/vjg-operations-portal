@@ -781,6 +781,11 @@ function renderFleet() {
 }
 
 function fleetStatusHtml(reg, fallbackStatus) {
+  const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === (reg || '').toUpperCase());
+  if (ac && ac.statusDisplay) {
+    const cls = ac.statusDisplay.startsWith('EN VUELO') ? '' : 'completed';
+    return `<div class="status-ticker ${cls}"><span>${ac.statusDisplay}</span></div>`;
+  }
   const flights = ifFlightsCache.filter(f => (f.registration || '').toUpperCase() === (reg || '').toUpperCase());
   if (flights.length) {
     const latest = flights.sort((a,b) => new Date(b.actualDepartureUtc||0) - new Date(a.actualDepartureUtc||0))[0];
@@ -871,6 +876,7 @@ async function loadFleet() {
     mlw: f.mlw_kg || '—',
     oew: f.oew_kg || '—',
     status: f.status || 'available',
+    statusDisplay: f.status_display || '',
     editing: false
   }));
 
@@ -984,6 +990,28 @@ async function loadBitacora() {
 
     ifFlights.sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
     ifFlightsCache = ifFlights;
+    // Persist status display for public fleet view
+    const statusByReg = {};
+    ifFlights.forEach(f => {
+      const r = (f.registration || '').toUpperCase();
+      if (!r || statusByReg[r]) return;
+      const isActive = !f.actualArrivalUtc;
+      if (isActive) {
+        const eta = f.estimatedArrivalUtc || f.eta;
+        let extra = '';
+        if (eta) {
+          const mins = Math.max(0, Math.round((new Date(eta) - Date.now()) / 60000));
+          if (mins > 0) extra = ` · Llega en ${mins} min`;
+        }
+        statusByReg[r] = `EN VUELO${extra}`;
+      } else {
+        const dur = f.flightTimeMinutes ? formatDuration(f.flightTimeMinutes) : '';
+        statusByReg[r] = dur ? `Completado · ${dur}` : 'Completado';
+      }
+    });
+    for (const [reg, txt] of Object.entries(statusByReg)) {
+      sb.from('fleet').update({ status_display: txt }).eq('registration', reg).then(() => {});
+    }
     ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
 
     if (ifFlights.length) {
