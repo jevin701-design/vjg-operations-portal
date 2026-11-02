@@ -961,7 +961,7 @@ async function loadBitacora() {
       }));
     } else {
       statusEl.textContent = t('Sin datos de bitácora', 'No logbook data');
-      body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted)">${t('Aún no hay vuelos guardados', 'No saved flights yet')}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center"><a class="btn primary" href="https://live.infiniteflight.com/organization/${VJG_ORG_ID}" target="_blank">${t('Únete a Infinite Flight / VJG para ver el registro', 'Join Infinite Flight / VJG to see the log')}</a></td></tr>`;
     }
     return;
   }
