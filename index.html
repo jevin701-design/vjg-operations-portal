@@ -251,7 +251,10 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <h2 data-es="Aeronaves para cada misión." data-en="Aircraft for Every Mission.">Aeronaves para cada misión.</h2>
       <div id="fleetContent">
         <div class="card">
-          <h3 style="margin-top:0" data-es="Flota de la organización" data-en="Organization fleet">Flota de la organización</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0" data-es="Flota de la organización" data-en="Organization fleet">Flota de la organización</h3>
+            <button class="btn primary" id="addAcBtn" onclick="addAircraft()" style="display:none" data-es="Agregar aeronave" data-en="Add aircraft">Agregar aeronave</button>
+          </div>
           <p id="fleetDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
           <div style="overflow-x:auto">
             <table>
@@ -316,7 +319,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <h2 data-es="Generador de números de vuelo" data-en="Flight Number Generator">Generador de números de vuelo</h2>
       <div id="generatorContent">
         <p class="lead" data-es="Selecciona el tipo de vuelo y genera un número VJT." data-en="Select the flight type and generate a VJT number.">Selecciona el tipo de vuelo y genera un número VJT.</p>
-        <div id="generatorForm" class="member-only">
+        <div id="generatorForm" class="member-only" style="max-width:560px;margin-top:20px;background:#1a1a1a;padding:24px;border-radius:12px;border:1px solid #2a2a2a">
           <label data-es="Tipo de vuelo" data-en="Flight type">Tipo de vuelo</label>
           <select id="genType">
             <option value="privada" data-es="Privada (100–499)" data-en="Private (100–499)">Privada (100–499)</option>
@@ -335,10 +338,13 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <select id="genAircraft" onchange="loadAircraftConfig()"></select>
           <label data-es="Configuración" data-en="Configuration">Configuración</label>
           <select id="genConfig" onchange="applyConfig()"><option value="">—</option></select>
-          <label data-es="Carga (kg)" data-en="Payload (kg)">Carga (kg)</label>
-          <input id="genPayload" type="number" placeholder="0">
-          <label data-es="Combustible (kg)" data-en="Fuel (kg)">Combustible (kg)</label>
-          <input id="genFuel" type="number" placeholder="0">
+          <div id="weightSection" style="margin-top:16px;padding-top:16px;border-top:1px solid #333">
+            <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px" data-es="Pesos del vuelo" data-en="Flight weights">Pesos del vuelo</div>
+            <label data-es="Carga (kg)" data-en="Payload (kg)">Carga (kg)</label>
+            <input id="genPayload" type="number" placeholder="0">
+            <label data-es="Combustible (kg)" data-en="Fuel (kg)">Combustible (kg)</label>
+            <input id="genFuel" type="number" placeholder="0">
+          </div>
           <button class="btn primary" style="margin-top:12px" onclick="generateFlightNumber()" data-es="Generar número" data-en="Generate number">Generar número</button>
           <p id="genResult" style="margin-top:16px;font-size:20px;font-weight:800;color:var(--red)"></p>
         </div>
@@ -749,26 +755,57 @@ async function safeJson(res) {
 
 function renderFleet() {
   const body = document.getElementById('fleetBody');
+  const addBtn = document.getElementById('addAcBtn');
+  if (addBtn) addBtn.style.display = isAdmin ? 'inline-block' : 'none';
   if (!fleetCache.length) {
     body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
     return;
   }
   body.innerHTML = fleetCache.map((ac, idx) => {
     const st = aircraftStatusMap[(ac.registration || '').toUpperCase()] || ac.status || 'available';
+    const statusHtml = fleetStatusHtml(ac.registration, st);
     return `
       <tr>
         <td style="font-weight:700">${ac.registration || '—'}</td>
         <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:100px">` : (ac.manufacturer || '—')}</td>
         <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:80px">` : (ac.model || '—')}</td>
         <td>${ac.editing ? `<select id="use_${idx}"><option value="Privada" ${ac.usage==='Privada'?'selected':''}>Privada</option><option value="Cargo" ${ac.usage==='Cargo'?'selected':''}>Cargo</option><option value="Chárter" ${ac.usage==='Chárter'?'selected':''}>Chárter</option></select>` : (ac.usage || '—')}</td>
-        <td><span class="pill ${st}">${statusLabel(st)}</span></td>
+        <td>${statusHtml}</td>
         <td>${ac.editing ? `<input type="number" id="mtow_${idx}" value="${ac.mtow || ''}" style="width:80px">` : (ac.mtow || '—')}</td>
         <td>${ac.editing ? `<input type="number" id="mlw_${idx}" value="${ac.mlw || ''}" style="width:80px">` : (ac.mlw || '—')}</td>
         <td>${ac.editing ? `<input type="number" id="oew_${idx}" value="${ac.oew || ''}" style="width:80px">` : (ac.oew || '—')}</td>
-        <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button>`) : ''}</td>
+        <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button> <button class="btn" onclick="deleteAircraft('${ac.registration}')" style="border-color:#ef4444;color:#ef4444">Eliminar</button>`) : ''}</td>
       </tr>
     `;
   }).join('');
+}
+
+function fleetStatusHtml(reg, fallbackStatus) {
+  const flights = ifFlightsCache.filter(f => (f.registration || '').toUpperCase() === (reg || '').toUpperCase());
+  if (flights.length) {
+    const latest = flights.sort((a,b) => new Date(b.actualDepartureUtc||0) - new Date(a.actualDepartureUtc||0))[0];
+    return statusTicker(latest);
+  }
+  return `<span class="pill ${fallbackStatus}">${statusLabel(fallbackStatus)}</span>`;
+}
+
+async function addAircraft() {
+  if (!isAdmin) return;
+  const reg = prompt(t('Matrícula (ej. IF-XXXX)', 'Registration (e.g. IF-XXXX)'));
+  if (!reg) return;
+  const { error } = await sb.from('fleet').upsert({ registration: reg.toUpperCase() }, { onConflict: 'registration' });
+  if (error) { showToast(error.message, true); return; }
+  showToast(t('Aeronave agregada', 'Aircraft added'));
+  loadFleet();
+}
+
+async function deleteAircraft(reg) {
+  if (!isAdmin) return;
+  if (!confirm(t(`¿Eliminar ${reg}?`, `Delete ${reg}?`))) return;
+  const { error } = await sb.from('fleet').delete().eq('registration', reg);
+  if (error) { showToast(error.message, true); return; }
+  showToast(t('Aeronave eliminada', 'Aircraft deleted'));
+  loadFleet();
 }
 
 function editFleet(idx) {
@@ -983,8 +1020,11 @@ async function lookupICAO(inputId, infoId) {
   try {
     const res = await fetch(`https://airportsapi.com/api/airports/${code}`);
     const data = await res.json();
-    if (data && data.name) {
-      info.textContent = `${data.name} · ${data.municipality || data.city || ''} · ${data.iso_country || data.country || ''}`;
+    const attr = data?.data?.attributes;
+    if (attr && attr.name) {
+      const city = attr.municipality || attr.city || '';
+      const country = attr.iso_country || attr.country || '';
+      info.textContent = [attr.name, city, country].filter(Boolean).join(' · ');
     } else {
       info.textContent = t('No encontrado', 'Not found');
     }
