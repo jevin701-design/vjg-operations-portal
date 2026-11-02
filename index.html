@@ -40,18 +40,17 @@ header {
 }
 .brand span { color: var(--red); }
 nav {
-  display: flex; flex-wrap: wrap; gap: 16px;
+  display: flex; flex-wrap: wrap; gap: 8px;
   margin-top: 12px; font-size: 14px;
 }
 nav a {
   color: #ddd; text-decoration: none; cursor: pointer;
-  padding-bottom: 2px;
+  padding: 6px 12px; border-radius: 6px;
 }
 nav a:hover { color: white; }
 nav a.active {
+  background: #2a2a2a;
   color: #fff;
-  border-bottom: 1px solid #c8102e;
-  letter-spacing: 0.4px;
 }
 .header-actions { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
 .btn {
@@ -128,6 +127,28 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 .pill.on_ground { background: #1e3a5f; color: #3b82f6; }
 .pill.hangar { background: #14532d; color: #16a34a; }
 .pill.maintenance { background: #3a2a10; color: #eab308; }
+.flying-ticker {
+  display: inline-block;
+  background: #14372c;
+  color: #22c55e;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 4px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 160px;
+  vertical-align: middle;
+}
+.flying-ticker span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: ticker 8s linear infinite;
+}
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
 .toast {
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
   background: #1e1e1e; border: 1px solid var(--green); color: white;
@@ -140,7 +161,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 @media (max-width: 700px) {
   header, main, footer { padding-left: 20px; padding-right: 16px; }
   .left-bar { width: 4px; }
-  nav a.active { letter-spacing: 0.2px; }
+  nav a.active { padding: 4px 8px; }
 }
 </style>
 </head>
@@ -618,6 +639,16 @@ function statusLabel(status) {
   return map[status] || status;
 }
 
+function etaText(f) {
+  const eta = f.estimatedArrivalUtc || f.eta || f.estimatedArrival;
+  if (eta) {
+    const mins = Math.max(0, Math.round((new Date(eta) - Date.now()) / 60000));
+    if (mins > 0) return ` · Llega en ${mins} min`;
+  }
+  if (f.remainingMinutes) return ` · ${f.remainingMinutes} min restantes`;
+  return '';
+}
+
 function showHistory(reg) {
   selectedReg = reg;
   document.querySelectorAll('.reg-link').forEach(el => {
@@ -861,8 +892,9 @@ async function loadBitacora() {
     if (ifFlights.length) {
       body.innerHTML = ifFlights.map((f) => {
         const isActive = !f.actualArrivalUtc;
+        const eta = etaText(f);
         const statusLabelHtml = isActive
-          ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
+          ? `<div class="flying-ticker"><span>EN VUELO${eta}</span></div>`
           : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
         const reg = f.registration || '—';
         const isSelected = selectedReg && reg.toUpperCase() === selectedReg.toUpperCase();
