@@ -45,8 +45,14 @@ nav {
 }
 nav a {
   color: #ddd; text-decoration: none; cursor: pointer;
+  padding-bottom: 2px;
 }
-nav a:hover, nav a.active { color: white; }
+nav a:hover { color: white; }
+nav a.active {
+  color: #fff;
+  border-bottom: 1px solid #c8102e;
+  letter-spacing: 0.4px;
+}
 .header-actions { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
 .btn {
   background: transparent; border: 1px solid #444; color: white;
@@ -119,6 +125,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 .pill.closed { background: #14372c; color: #22c55e; }
 .pill.active { background: #391a25; color: var(--red); }
 .pill.pending { background: #3a2a10; color: #eab308; }
+.pill.on_ground { background: #1e3a5f; color: #3b82f6; }
+.pill.hangar { background: #14532d; color: #16a34a; }
+.pill.maintenance { background: #3a2a10; color: #eab308; }
 .toast {
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
   background: #1e1e1e; border: 1px solid var(--green); color: white;
@@ -131,6 +140,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 @media (max-width: 700px) {
   header, main, footer { padding-left: 20px; padding-right: 16px; }
   .left-bar { width: 4px; }
+  nav a.active { letter-spacing: 0.2px; }
 }
 </style>
 </head>
@@ -140,15 +150,15 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 <header>
   <a class="brand" href="#" onclick="showView('home'); return false;">VISTA<span>JET</span> GROUP</a>
   <nav>
-    <a onclick="showView('about')" data-es="Acerca de" data-en="About Us">Acerca de</a>
-    <a onclick="showView('staff')" data-es="Nuestro staff" data-en="Our Staff">Nuestro staff</a>
-    <a onclick="showView('fleet')" data-es="Flota" data-en="Fleet">Flota</a>
-    <a onclick="showView('routes')" data-es="Rutas" data-en="Routes">Rutas</a>
-    <a onclick="showView('hubs')" data-es="Hubs" data-en="Hubs">Hubs</a>
-    <a onclick="showView('ranks')" data-es="Rangos" data-en="Ranks">Rangos</a>
-    <a onclick="showView('apply')" data-es="Únete" data-en="Apply">Únete</a>
-    <a onclick="showView('generator')" data-es="Generador" data-en="Generator">Generador</a>
-    <a onclick="showView('bitacora')" data-es="Bitácora" data-en="Logbook">Bitácora</a>
+    <a onclick="showView('about')" data-view="about" data-es="Acerca de" data-en="About Us">Acerca de</a>
+    <a onclick="showView('staff')" data-view="staff" data-es="Nuestro staff" data-en="Our Staff">Nuestro staff</a>
+    <a onclick="showView('fleet')" data-view="fleet" data-es="Flota" data-en="Fleet">Flota</a>
+    <a onclick="showView('routes')" data-view="routes" data-es="Rutas" data-en="Routes">Rutas</a>
+    <a onclick="showView('hubs')" data-view="hubs" data-es="Hubs" data-en="Hubs">Hubs</a>
+    <a onclick="showView('ranks')" data-view="ranks" data-es="Rangos" data-en="Ranks">Rangos</a>
+    <a onclick="showView('apply')" data-view="apply" data-es="Únete" data-en="Apply">Únete</a>
+    <a onclick="showView('generator')" data-view="generator" data-es="Generador" data-en="Generator">Generador</a>
+    <a onclick="showView('bitacora')" data-view="bitacora" data-es="Bitácora" data-en="Logbook">Bitácora</a>
   </nav>
   <div class="header-actions">
     <button class="btn" onclick="toggleLang()">English</button>
@@ -383,9 +393,10 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 /*
   REGLA GLOBAL VJG:
   - Todas las páginas son visibles para todos.
-  - Herramientas interactivas (generador, datos en vivo de IF, etc.) solo para miembros de la organización VJG en Infinite Flight.
-  - Cualquier función editable (flota, hubs, etc.) solo puede ser editada por usuarios con is_admin = true en profiles.
-  - Si un no-miembro intenta usar una herramienta, se muestra enlace "Únete a VistaJet Group".
+  - Herramientas interactivas solo para miembros de VJG en IF (o admin).
+  - Admin puede usar todas las funciones de admin sin necesidad de estar en IF.
+  - Cualquier función editable solo para is_admin = true.
+  - Estado de flota se toma de la bitácora / datos de IF.
 */
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
@@ -403,6 +414,7 @@ let ifConnected = false;
 let ifFlightsCache = [];
 let selectedReg = null;
 let fleetCache = [];
+let aircraftStatusMap = {};
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -429,6 +441,9 @@ function toggleLang() {
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  const link = document.querySelector(`nav a[data-view="${name}"]`);
+  if (link) link.classList.add('active');
   if (name === 'fleet') loadFleet();
   if (name === 'hubs') loadHubs();
   if (name === 'bitacora') loadBitacora();
@@ -494,9 +509,9 @@ async function handleIFCallback(){
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
       document.getElementById('loginBtn').onclick = logout;
       const isVjg = await checkVjgMembership();
-      if (isVjg) {
+      if (isVjg || isAdmin) {
         isMember = true;
-        showToast('Conectado con Infinite Flight — miembro de VJG');
+        showToast('Conectado con Infinite Flight');
         showView('home');
       } else {
         isMember = false;
@@ -573,7 +588,7 @@ async function restoreIFSession() {
     currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
     document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
     document.getElementById('loginBtn').onclick = logout;
-    isMember = await checkVjgMembership();
+    isMember = await checkVjgMembership() || isAdmin;
   }
 }
 
@@ -589,6 +604,18 @@ function getFleetInfo(reg) {
   if (!ac) return { manufacturer: '—', model: '—', usage: '—', avion: '—' };
   const avion = ac.model && ac.model !== '—' ? ac.model : (ac.manufacturer && ac.manufacturer !== '—' ? ac.manufacturer : '—');
   return { manufacturer: ac.manufacturer || '—', model: ac.model || '—', usage: ac.usage || '—', avion };
+}
+
+function statusLabel(status) {
+  const map = {
+    flying: t('En vuelo', 'In flight'),
+    on_ground: t('En aeropuerto', 'On ground'),
+    hangar: t('En hangar', 'Hangar'),
+    maintenance: t('Mantenimiento', 'Maintenance'),
+    available: t('Disponible', 'Available'),
+    unavailable: t('No disponible', 'Unavailable')
+  };
+  return map[status] || status;
 }
 
 function showHistory(reg) {
@@ -637,7 +664,7 @@ async function safeJson(res) {
 }
 
 function memberGate(actionName) {
-  if (!isMember) {
+  if (!isMember && !isAdmin) {
     showToast(t(`Únete a VistaJet Group para usar ${actionName}`, `Join VistaJet Group to use ${actionName}`), true);
     return false;
   }
@@ -650,16 +677,19 @@ function renderFleet() {
     body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
     return;
   }
-  body.innerHTML = fleetCache.map((ac, idx) => `
-    <tr>
-      <td style="font-weight:700">${ac.registration || '—'}</td>
-      <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:120px">` : (ac.manufacturer || '—')}</td>
-      <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:100px">` : (ac.model || '—')}</td>
-      <td>${ac.editing ? `<select id="use_${idx}"><option value="Privada" ${ac.usage==='Privada'?'selected':''}>Privada</option><option value="Cargo" ${ac.usage==='Cargo'?'selected':''}>Cargo</option><option value="Chárter" ${ac.usage==='Chárter'?'selected':''}>Chárter</option></select>` : (ac.usage || '—')}</td>
-      <td><span class="pill ${ac.status === 'flying' ? 'active' : 'closed'}">${ac.status === 'flying' ? t('En vuelo', 'In flight') : t('Disponible', 'Available')}</span></td>
-      <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button>`) : ''}</td>
-    </tr>
-  `).join('');
+  body.innerHTML = fleetCache.map((ac, idx) => {
+    const st = aircraftStatusMap[(ac.registration || '').toUpperCase()] || ac.status || 'available';
+    return `
+      <tr>
+        <td style="font-weight:700">${ac.registration || '—'}</td>
+        <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:120px">` : (ac.manufacturer || '—')}</td>
+        <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:100px">` : (ac.model || '—')}</td>
+        <td>${ac.editing ? `<select id="use_${idx}"><option value="Privada" ${ac.usage==='Privada'?'selected':''}>Privada</option><option value="Cargo" ${ac.usage==='Cargo'?'selected':''}>Cargo</option><option value="Chárter" ${ac.usage==='Chárter'?'selected':''}>Chárter</option></select>` : (ac.usage || '—')}</td>
+        <td><span class="pill ${st}">${statusLabel(st)}</span></td>
+        <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button>`) : ''}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function editFleet(idx) {
@@ -719,30 +749,34 @@ async function loadFleet() {
   debug.textContent = `${t('Aeronaves en la flota', 'Aircraft in fleet')}: ${fleetCache.length}`;
   renderFleet();
 
-  if (ifConnected && isMember) {
+  if ((ifConnected && isMember) || isAdmin) {
     const token = localStorage.getItem('if_access_token');
-    try {
-      const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      const orgData = await safeJson(orgRes);
-      if (orgData.result && orgData.result.length) {
-        const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
-        const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+    if (token) {
+      try {
+        const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
           headers: { Authorization: 'Bearer ' + token }
         });
-        const acData = await safeJson(acRes);
-        const aircraftList = acData.result || [];
-        aircraftList.forEach(ac => {
-          const reg = (ac.registration || '').toUpperCase();
-          const existing = fleetCache.find(f => (f.registration || '').toUpperCase() === reg);
-          if (existing) {
-            existing.status = ac.isFlying ? 'flying' : 'available';
-          }
-        });
-        renderFleet();
-      }
-    } catch(e) {}
+        const orgData = await safeJson(orgRes);
+        if (orgData.result && orgData.result.length) {
+          const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
+          const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const acData = await safeJson(acRes);
+          const aircraftList = acData.result || [];
+          aircraftStatusMap = {};
+          aircraftList.forEach(ac => {
+            const reg = (ac.registration || '').toUpperCase();
+            let st = 'available';
+            if (ac.isFlying) st = 'flying';
+            else if (ac.visibility === 0) st = 'hangar';
+            else st = 'on_ground';
+            aircraftStatusMap[reg] = st;
+          });
+          renderFleet();
+        }
+      } catch(e) {}
+    }
   }
 }
 
@@ -754,16 +788,24 @@ async function loadBitacora() {
 
   ifCard.style.display = 'block';
 
-  if (!ifConnected || !isMember) {
+  const canSeeLive = isAdmin || (ifConnected && isMember);
+  if (!canSeeLive) {
     statusEl.textContent = t('Bitácora visible — únete a VJG y conecta con IF para datos en vivo', 'Logbook visible — join VJG and connect with IF for live data');
     ifDebug.textContent = '';
     body.innerHTML = `<tr><td colspan="7" style="text-align:center"><a class="btn primary" href="https://live.infiniteflight.com/organization/${VJG_ORG_ID}" target="_blank">Únete a VistaJet Group</a></td></tr>`;
     return;
   }
 
-  statusEl.textContent = t('Sesión activa — miembro de VJG', 'Active session — VJG member');
-
   const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    statusEl.textContent = t('Admin — conecta con IF para datos en vivo', 'Admin — connect with IF for live data');
+    ifDebug.textContent = '';
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>`;
+    return;
+  }
+
+  statusEl.textContent = isAdmin ? t('Admin — datos de IF', 'Admin — IF data') : t('Sesión activa — miembro de VJG', 'Active session — VJG member');
+
   try {
     const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
       headers: { Authorization: 'Bearer ' + token }
@@ -773,7 +815,6 @@ async function loadBitacora() {
     if (orgData.error || !orgData.result || !orgData.result.length || orgRes.status === 401) {
       localStorage.removeItem('if_access_token');
       ifConnected = false;
-      isMember = false;
       ifDebug.textContent = t('Token vencido — reconecta', 'Token expired — reconnect');
       body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
       return;
@@ -820,7 +861,7 @@ async function loadBitacora() {
     if (ifFlights.length) {
       body.innerHTML = ifFlights.map((f) => {
         const isActive = !f.actualArrivalUtc;
-        const statusLabel = isActive
+        const statusLabelHtml = isActive
           ? '<span style="color:#22c55e;font-weight:700">EN VUELO</span>'
           : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
         const reg = f.registration || '—';
@@ -832,7 +873,7 @@ async function loadBitacora() {
             <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
             <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
             <td>${f.usage || '—'}</td>
-            <td>${statusLabel}</td>
+            <td>${statusLabelHtml}</td>
             <td>${f.pilotName || '—'}</td>
           </tr>
         `;
@@ -843,7 +884,6 @@ async function loadBitacora() {
   } catch (e) {
     localStorage.removeItem('if_access_token');
     ifConnected = false;
-    isMember = false;
     ifDebug.textContent = 'Error — reconecta con IF';
     body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
   }
@@ -853,7 +893,7 @@ function loadHubs() { document.getElementById('hubsContent').innerHTML = '<div c
 function updateGeneratorAccess() {
   const form = document.getElementById('generatorForm');
   const notice = document.getElementById('generatorNotice');
-  if (isMember) {
+  if (isMember || isAdmin) {
     form.classList.remove('member-only');
     notice.classList.add('hidden');
   } else {
