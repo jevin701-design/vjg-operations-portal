@@ -481,11 +481,11 @@ let fleetCache = [];
 let aircraftStatusMap = {};
 let aircraftConfigs = {
   '777F': [
-    { name: '1. Carga máxima', payload: 105000, fuel: 95000, mtow: 347815, mlw: 260810, oew: 139010 },
-    { name: '2. Carga alta', payload: 90000, fuel: 110000, mtow: 347815, mlw: 260810, oew: 139010 },
-    { name: '3. Carga media', payload: 70000, fuel: 130000, mtow: 347815, mlw: 260810, oew: 139010 },
-    { name: '4. Carga ligera', payload: 45000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 },
-    { name: '5. Ferry / Full fuel', payload: 15000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 }
+    { name: '1. Carga máxima (100-110t / 90-100t fuel)', payload: 105000, fuel: 95000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '2. Carga alta (85-95t / 105-115t fuel)', payload: 90000, fuel: 110000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '3. Carga media (65-75t / 125-135t fuel)', payload: 70000, fuel: 130000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '4. Carga ligera (40-50t / 140-145t fuel)', payload: 45000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '5. Ferry / Full fuel (10-20t / 140-145t fuel)', payload: 15000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 }
   ]
 };
 
@@ -941,9 +941,8 @@ async function loadBitacora() {
       ifDebug.textContent = `${cached.length} vuelos`;
       body.innerHTML = cached.map(f => {
         const isActive = !f.actual_arrival_utc;
-        const statusHtml = f.status_display
-          ? `<div class="status-ticker ${isActive ? '' : 'completed'}"><span>${f.status_display}</span></div>`
-          : (isActive ? 'EN VUELO' : 'Completado');
+        const statusTxt = f.status_display || (isActive ? 'EN VUELO' : 'Completado');
+        const statusHtml = `<div class="status-ticker ${isActive ? '' : 'completed'}"><span>${statusTxt}</span></div>`;
         return `
           <tr style="${isActive ? 'background:#14372c' : ''}">
             <td>${f.actual_departure_utc ? new Date(f.actual_departure_utc).toLocaleDateString() : '—'}</td>
@@ -1048,20 +1047,36 @@ async function loadBitacora() {
     for (const [reg, txt] of Object.entries(statusByReg)) {
       sb.from('fleet').update({ status_display: txt }).eq('registration', reg).then(() => {});
     }
-    // Persist flights to public cache
-    const rows = ifFlights.slice(0, 50).map(f => ({
-      id: f.id || `${f.registration}-${f.actualDepartureUtc}`,
-      registration: f.registration,
-      avion: f.avion,
-      origin_icao: f.originIcao,
-      destination_icao: f.destinationIcao,
-      usage_type: f.usage,
-      pilot_name: f.pilotName,
-      actual_departure_utc: f.actualDepartureUtc,
-      actual_arrival_utc: f.actualArrivalUtc,
-      flight_time_minutes: f.flightTimeMinutes,
-      status_display: statusByReg[(f.registration || '').toUpperCase()] || ''
-    }));
+    // Persist flights to public cache — each flight has its own status
+    const rows = ifFlights.slice(0, 50).map(f => {
+      const isActive = !f.actualArrivalUtc;
+      let statusTxt = 'Completado';
+      if (isActive) {
+        const eta = f.estimatedArrivalUtc || f.eta;
+        let extra = '';
+        if (eta) {
+          const mins = Math.max(0, Math.round((new Date(eta) - Date.now()) / 60000));
+          if (mins > 0) extra = ` · Llega en ${mins} min`;
+        }
+        statusTxt = `EN VUELO${extra}`;
+      } else {
+        const dur = f.flightTimeMinutes ? formatDuration(f.flightTimeMinutes) : '';
+        statusTxt = dur ? `Completado · ${dur}` : 'Completado';
+      }
+      return {
+        id: f.id || `${f.registration}-${f.actualDepartureUtc}`,
+        registration: f.registration,
+        avion: f.avion,
+        origin_icao: f.originIcao,
+        destination_icao: f.destinationIcao,
+        usage_type: f.usage,
+        pilot_name: f.pilotName,
+        actual_departure_utc: f.actualDepartureUtc,
+        actual_arrival_utc: f.actualArrivalUtc,
+        flight_time_minutes: f.flightTimeMinutes,
+        status_display: statusTxt
+      };
+    });
     if (rows.length) {
       sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
     }
