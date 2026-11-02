@@ -479,6 +479,14 @@ let ifFlightsCache = [];
 let selectedReg = null;
 let fleetCache = [];
 let aircraftStatusMap = {};
+const modelWeights = {
+  '777F': { mtow: 347815, mlw: 260810, oew: 139010 },
+  'B777F': { mtow: 347815, mlw: 260810, oew: 139010 },
+  'A380': { mtow: 575000, mlw: 394000, oew: 276800 },
+  'A380-800': { mtow: 575000, mlw: 394000, oew: 276800 },
+  'CHALLENGER 350': { mtow: 18400, mlw: 17200, oew: 11400 }
+};
+
 let aircraftConfigs = {
   '777F': [
     { name: '1. Carga máxima (100-110t / 90-100t fuel)', payload: 105000, fuel: 95000, mtow: 347815, mlw: 260810, oew: 139010 },
@@ -701,7 +709,7 @@ function formatDuration(mins) {
 }
 
 function statusTicker(f) {
-  const isActive = !f.actualArrivalUtc;
+  const isActive = f.status === 0 || (f.status === undefined && !f.actualArrivalUtc);
   if (isActive) {
     const eta = f.estimatedArrivalUtc || f.eta;
     let extra = '';
@@ -732,7 +740,7 @@ function showHistory(reg) {
 
   document.getElementById('historyBody').innerHTML = flights.length
     ? flights.map(f => {
-        const isActive = !f.actualArrivalUtc;
+        const isActive = f.status === 0 || (f.status === undefined && !f.actualArrivalUtc);
         const statusText = isActive ? t('En vuelo', 'In flight') : t('Completado', 'Completed');
         const statusClass = isActive ? 'active' : 'closed';
         return `
@@ -875,18 +883,22 @@ async function loadFleet() {
     return;
   }
 
-  fleetCache = (dbFleet || []).map(f => ({
-    registration: f.registration || '—',
-    manufacturer: f.manufacturer || '—',
-    model: f.model || '—',
-    usage: f.usage_type || '—',
-    mtow: f.mtow_kg || '—',
-    mlw: f.mlw_kg || '—',
-    oew: f.oew_kg || '—',
-    status: f.status || 'available',
-    statusDisplay: f.status_display || '',
-    editing: false
-  }));
+  fleetCache = (dbFleet || []).map(f => {
+    const modelKey = (f.model || '').toUpperCase();
+    const defaults = modelWeights[modelKey] || {};
+    return {
+      registration: f.registration || '—',
+      manufacturer: f.manufacturer || '—',
+      model: f.model || '—',
+      usage: f.usage_type || '—',
+      mtow: f.mtow_kg || defaults.mtow || '—',
+      mlw: f.mlw_kg || defaults.mlw || '—',
+      oew: f.oew_kg || defaults.oew || '—',
+      status: f.status || 'available',
+      statusDisplay: f.status_display || '',
+      editing: false
+    };
+  });
 
   debug.textContent = `${t('Aeronaves en la flota', 'Aircraft in fleet')}: ${fleetCache.length}`;
   renderFleet();
@@ -940,7 +952,7 @@ async function loadBitacora() {
       statusEl.textContent = t('Bitácora (datos guardados)', 'Logbook (saved data)');
       ifDebug.textContent = `${cached.length} vuelos`;
       body.innerHTML = cached.map(f => {
-        const isActive = !f.actual_arrival_utc;
+        const isActive = f.status === 0 || (f.status === undefined && !f.actual_arrival_utc);
         const statusTxt = f.status_display || (isActive ? 'EN VUELO' : 'Completado');
         const statusHtml = `<div class="status-ticker ${isActive ? '' : 'completed'}"><span>${statusTxt}</span></div>`;
         return `
@@ -1030,7 +1042,7 @@ async function loadBitacora() {
     ifFlights.forEach(f => {
       const r = (f.registration || '').toUpperCase();
       if (!r || statusByReg[r]) return;
-      const isActive = !f.actualArrivalUtc;
+      const isActive = f.status === 0 || (f.status === undefined && !f.actualArrivalUtc);
       if (isActive) {
         const eta = f.estimatedArrivalUtc || f.eta;
         let extra = '';
@@ -1049,7 +1061,7 @@ async function loadBitacora() {
     }
     // Persist flights to public cache — each flight has its own status
     const rows = ifFlights.slice(0, 50).map(f => {
-      const isActive = !f.actualArrivalUtc;
+      const isActive = f.status === 0 || (f.status === undefined && !f.actualArrivalUtc);
       let statusTxt = 'Completado';
       if (isActive) {
         const eta = f.estimatedArrivalUtc || f.eta;
