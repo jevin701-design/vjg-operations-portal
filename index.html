@@ -216,7 +216,26 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <section class="section">
       <div class="eyebrow">03 · <span data-es="FLOTA" data-en="FLEET">FLOTA</span></div>
       <h2 data-es="Aeronaves para cada misión." data-en="Aircraft for Every Mission.">Aeronaves para cada misión.</h2>
-      <div id="fleetContent"></div>
+      <div id="fleetContent">
+        <div class="card">
+          <h3 style="margin-top:0" data-es="Flota de la organización" data-en="Organization fleet">Flota de la organización</h3>
+          <p id="fleetDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th data-es="Matrícula" data-en="Registration">Matrícula</th>
+                  <th data-es="Fabricante" data-en="Manufacturer">Fabricante</th>
+                  <th data-es="Modelo" data-en="Model">Modelo</th>
+                  <th data-es="Tipo de uso" data-en="Usage type">Tipo de uso</th>
+                  <th data-es="Estado" data-en="Status">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="fleetBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -374,6 +393,7 @@ let isAdmin = false;
 let ifFlightsCache = [];
 let selectedReg = null;
 let aircraftMap = {};
+let fleetCache = [];
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -394,6 +414,7 @@ function toggleLang() {
   });
   document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
   if (selectedReg) showHistory(selectedReg);
+  renderFleet();
 }
 
 function showView(name) {
@@ -570,6 +591,76 @@ async function safeJson(res) {
   try { return JSON.parse(text); } catch { return { error: 'badjson', status: res.status }; }
 }
 
+function renderFleet() {
+  const body = document.getElementById('fleetBody');
+  if (!fleetCache.length) {
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
+    return;
+  }
+  body.innerHTML = fleetCache.map(ac => `
+    <tr>
+      <td style="font-weight:700">${ac.registration || '—'}</td>
+      <td>${ac.manufacturer || '—'}</td>
+      <td>${ac.model || '—'}</td>
+      <td>${ac.usage || '—'}</td>
+      <td><span class="pill ${ac.status === 'flying' ? 'active' : 'closed'}">${ac.status === 'flying' ? t('En vuelo', 'In flight') : t('Disponible', 'Available')}</span></td>
+    </tr>
+  `).join('');
+}
+
+async function loadFleet() {
+  const debug = document.getElementById('fleetDebug');
+  const body = document.getElementById('fleetBody');
+
+  if (!currentUser) {
+    debug.textContent = t('Inicia sesión con Infinite Flight para ver la flota', 'Sign in with Infinite Flight to see the fleet');
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+    return;
+  }
+
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    debug.textContent = t('Reconecta con Infinite Flight', 'Reconnect with Infinite Flight');
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+    return;
+  }
+
+  try {
+    const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const orgData = await safeJson(orgRes);
+
+    if (orgData.error || !orgData.result || !orgData.result.length || orgRes.status === 401) {
+      localStorage.removeItem('if_access_token');
+      debug.textContent = t('Token vencido — reconecta', 'Token expired — reconnect');
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
+      return;
+    }
+
+    const orgId = orgData.result[0].id;
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const acData = await safeJson(acRes);
+    const aircraftList = acData.result || [];
+
+    fleetCache = aircraftList.map(ac => ({
+      registration: ac.registration || '—',
+      manufacturer: ac.manufacturer || ac.aircraftType || '—',
+      model: ac.model || ac.aircraftName || '—',
+      usage: ac.usageType || ac.category || '—',
+      status: ac.isFlying ? 'flying' : 'available'
+    }));
+
+    debug.textContent = `${t('Aeronaves en la organización', 'Aircraft in organization')}: ${fleetCache.length}`;
+    renderFleet();
+  } catch (e) {
+    debug.textContent = 'Error: ' + e.message;
+    body.innerHTML = '<tr><td colspan="5" style="color:#ef4444">Error al cargar la flota</td></tr>';
+  }
+}
+
 async function loadBitacora() {
   const statusEl = document.getElementById('statusTextBit');
   const ifCard = document.getElementById('ifFlightsCard');
@@ -674,7 +765,6 @@ async function loadBitacora() {
   }
 }
 
-function loadFleet() { document.getElementById('fleetContent').innerHTML = '<p>Cargando flota…</p>'; }
 function loadHubs() { document.getElementById('hubsContent').innerHTML = '<div class="hub"><strong>MMLO</strong>Hub principal</div>'; }
 function updateGeneratorAccess() {
   const form = document.getElementById('generatorForm');
