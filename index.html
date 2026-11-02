@@ -479,7 +479,15 @@ let ifFlightsCache = [];
 let selectedReg = null;
 let fleetCache = [];
 let aircraftStatusMap = {};
-let aircraftConfigs = {};
+let aircraftConfigs = {
+  '777F': [
+    { name: '1. Carga máxima', payload: 105000, fuel: 95000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '2. Carga alta', payload: 90000, fuel: 110000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '3. Carga media', payload: 70000, fuel: 130000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '4. Carga ligera', payload: 45000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '5. Ferry / Full fuel', payload: 15000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 }
+  ]
+};
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -1112,12 +1120,18 @@ function loadAircraftSelect() {
   sel.innerHTML = '<option value="">—</option>' + fleetCache.map(ac => `<option value="${ac.registration}">${ac.registration} · ${ac.model || ac.manufacturer || ''}</option>`).join('');
 }
 
+function getConfigsForAircraft(reg) {
+  const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
+  const model = (ac?.model || '').toUpperCase();
+  return aircraftConfigs[reg.toUpperCase()] || aircraftConfigs[model] || [];
+}
+
 function loadAircraftConfig() {
   const reg = document.getElementById('genAircraft').value;
   const sel = document.getElementById('genConfig');
   sel.innerHTML = '<option value="">—</option>';
   if (!reg) return;
-  const configs = aircraftConfigs[reg.toUpperCase()] || [];
+  const configs = getConfigsForAircraft(reg);
   configs.forEach((c, i) => {
     sel.innerHTML += `<option value="${i}">${c.name || 'Config ' + (i+1)}</option>`;
   });
@@ -1127,12 +1141,12 @@ function applyConfig() {
   const reg = document.getElementById('genAircraft').value;
   const idx = document.getElementById('genConfig').value;
   if (!reg || idx === '') return;
-  const configs = aircraftConfigs[reg.toUpperCase()] || [];
+  const configs = getConfigsForAircraft(reg);
   const c = configs[parseInt(idx)];
   if (!c) return;
-  if (c.mtow) document.getElementById('genPayload').placeholder = `MTOW ${c.mtow}`;
-  if (c.fuel) document.getElementById('genFuel').value = c.fuel;
   if (c.payload) document.getElementById('genPayload').value = c.payload;
+  if (c.fuel) document.getElementById('genFuel').value = c.fuel;
+  showToast(`${c.name}: carga ${c.payload} kg · fuel ${c.fuel} kg`);
 }
 
 function generateFlightNumber() {
