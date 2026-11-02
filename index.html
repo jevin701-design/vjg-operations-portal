@@ -93,7 +93,7 @@ h2 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 16px; font-weight: 800; }
   max-width: 420px; margin: 60px auto; background: var(--panel);
   padding: 32px; border-radius: 12px; border: 1px solid #333;
 }
-input[type="email"], input[type="password"], input[type="text"], select {
+input[type="email"], input[type="password"], input[type="text"], input[type="number"], select {
   width: 100%; padding: 8px; margin: 4px 0; background: #0d0d0d;
   border: 1px solid #333; color: white; border-radius: 6px;
 }
@@ -127,9 +127,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 .pill.on_ground { background: #1e3a5f; color: #3b82f6; }
 .pill.hangar { background: #14532d; color: #16a34a; }
 .pill.maintenance { background: #3a2a10; color: #eab308; }
-.flying-ticker {
+.status-ticker {
   display: inline-block;
-  background: #14372c;
+  background: #1a1a1a;
   color: #22c55e;
   font-weight: 800;
   font-size: 12px;
@@ -137,18 +137,20 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
   border-radius: 4px;
   overflow: hidden;
   white-space: nowrap;
-  max-width: 160px;
+  max-width: 180px;
   vertical-align: middle;
 }
-.flying-ticker span {
+.status-ticker.completed { color: #a0a0a0; }
+.status-ticker span {
   display: inline-block;
   padding-left: 100%;
-  animation: ticker 8s linear infinite;
+  animation: ticker 10s linear infinite;
 }
 @keyframes ticker {
   0% { transform: translateX(0); }
   100% { transform: translateX(-100%); }
 }
+.icao-info { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .toast {
   position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
   background: #1e1e1e; border: 1px solid var(--green); color: white;
@@ -260,6 +262,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
                   <th data-es="Modelo" data-en="Model">Modelo</th>
                   <th data-es="Tipo de uso" data-en="Usage type">Tipo de uso</th>
                   <th data-es="Estado" data-en="Status">Estado</th>
+                  <th data-es="MTOW (kg)" data-en="MTOW (kg)">MTOW (kg)</th>
+                  <th data-es="MLW (kg)" data-en="MLW (kg)">MLW (kg)</th>
+                  <th data-es="Peso vacío (kg)" data-en="OEW (kg)">Peso vacío (kg)</th>
                   <th data-es="Acciones" data-en="Actions">Acciones</th>
                 </tr>
               </thead>
@@ -312,7 +317,30 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <div id="generatorContent">
         <p class="lead" data-es="Selecciona el tipo de vuelo y genera un número VJT." data-en="Select the flight type and generate a VJT number.">Selecciona el tipo de vuelo y genera un número VJT.</p>
         <div id="generatorForm" class="member-only">
-          <p data-es="Formulario del generador (solo miembros)." data-en="Generator form (members only).">Formulario del generador (solo miembros).</p>
+          <label data-es="Tipo de vuelo" data-en="Flight type">Tipo de vuelo</label>
+          <select id="genType">
+            <option value="privada" data-es="Privada (100–499)" data-en="Private (100–499)">Privada (100–499)</option>
+            <option value="carga" data-es="Carga (500–899)" data-en="Cargo (500–899)">Carga (500–899)</option>
+            <option value="charter" data-es="Chárter (900–999)" data-en="Charter (900–999)">Chárter (900–999)</option>
+            <option value="militar" data-es="Militar" data-en="Military">Militar</option>
+            <option value="gubernamental" data-es="Gubernamental" data-en="Governmental">Gubernamental</option>
+          </select>
+          <label data-es="Origen (ICAO)" data-en="Origin (ICAO)">Origen (ICAO)</label>
+          <input id="genOrigin" type="text" maxlength="4" placeholder="MMLO" oninput="lookupICAO('genOrigin','originInfo')">
+          <div id="originInfo" class="icao-info"></div>
+          <label data-es="Destino (ICAO)" data-en="Destination (ICAO)">Destino (ICAO)</label>
+          <input id="genDest" type="text" maxlength="4" placeholder="MMQT" oninput="lookupICAO('genDest','destInfo')">
+          <div id="destInfo" class="icao-info"></div>
+          <label data-es="Aeronave (matrícula)" data-en="Aircraft (registration)">Aeronave (matrícula)</label>
+          <select id="genAircraft" onchange="loadAircraftConfig()"></select>
+          <label data-es="Configuración" data-en="Configuration">Configuración</label>
+          <select id="genConfig" onchange="applyConfig()"><option value="">—</option></select>
+          <label data-es="Carga (kg)" data-en="Payload (kg)">Carga (kg)</label>
+          <input id="genPayload" type="number" placeholder="0">
+          <label data-es="Combustible (kg)" data-en="Fuel (kg)">Combustible (kg)</label>
+          <input id="genFuel" type="number" placeholder="0">
+          <button class="btn primary" style="margin-top:12px" onclick="generateFlightNumber()" data-es="Generar número" data-en="Generate number">Generar número</button>
+          <p id="genResult" style="margin-top:16px;font-size:20px;font-weight:800;color:var(--red)"></p>
         </div>
         <div id="generatorNotice" class="member-notice hidden">
           <p data-es="Debes ser miembro de VistaJet Group para usar el generador." data-en="You must be a VistaJet Group member to use the generator.">Debes ser miembro de VistaJet Group para usar el generador.</p>
@@ -412,12 +440,13 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 
 <script>
 /*
-  REGLA GLOBAL VJG:
-  - Todas las páginas son visibles para todos.
-  - Herramientas interactivas solo para miembros de VJG en IF (o admin).
-  - Admin puede usar todas las funciones de admin sin necesidad de estar en IF.
-  - Cualquier función editable solo para is_admin = true.
-  - Estado de flota se toma de la bitácora / datos de IF.
+  ACTUALIZACIÓN 001 — 1 nov 2026
+  - Estado/Tiempo deslizable en bitácora (completado + activo)
+  - Flota: MTOW, MLW, OEW (admin edita)
+  - Generador funcional con numerología VJG + ICAO lookup
+  - Configuraciones de peso (estructura lista, datos desde archivo)
+  - Estado de flota desde org VJG en IF
+  - Bilingüe
 */
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
@@ -426,6 +455,14 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const IF_CLIENT_ID = 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV';
 const IF_REDIRECT_URI = 'https://vistajet-group.netlify.app/';
 const VJG_ORG_ID = '211f692c-6099-4289-ae6e-4d137880d976';
+
+const RANGES = {
+  privada: { min: 100, max: 499 },
+  carga: { min: 500, max: 899 },
+  charter: { min: 900, max: 999 },
+  militar: { min: 1000, max: 1099 },
+  gubernamental: { min: 1100, max: 1199 }
+};
 
 let currentLang = 'es';
 let currentUser = null;
@@ -436,6 +473,7 @@ let ifFlightsCache = [];
 let selectedReg = null;
 let fleetCache = [];
 let aircraftStatusMap = {};
+let aircraftConfigs = {};
 
 function t(es, en) { return currentLang === 'es' ? es : en; }
 
@@ -468,7 +506,7 @@ function showView(name) {
   if (name === 'fleet') loadFleet();
   if (name === 'hubs') loadHubs();
   if (name === 'bitacora') loadBitacora();
-  if (name === 'generator') updateGeneratorAccess();
+  if (name === 'generator') { updateGeneratorAccess(); loadAircraftSelect(); }
 }
 
 function togglePassword() {
@@ -493,7 +531,7 @@ async function startIFLogin(){
   sessionStorage.setItem('if_code_verifier', verifier);
   const state = generateRandomString(16);
   sessionStorage.setItem('if_state', state);
-  const scope = 'openid profile live:organizations.read live:aircraft.read';
+  const scope = 'openid profile live:organizations.read live:aircraft.read offline_access';
   const url = `https://api.infiniteflight.com/auth/v2/connect/authorize?response_type=code&client_id=${encodeURIComponent(IF_CLIENT_ID)}&redirect_uri=${encodeURIComponent(IF_REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
   window.location.href = url;
 }
@@ -525,6 +563,7 @@ async function handleIFCallback(){
     const tokenData = await res.json();
     if(tokenData.access_token){
       localStorage.setItem('if_access_token', tokenData.access_token);
+      if (tokenData.refresh_token) localStorage.setItem('if_refresh_token', tokenData.refresh_token);
       ifConnected = true;
       currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
@@ -591,6 +630,7 @@ async function login() {
 async function logout() {
   await sb.auth.signOut();
   localStorage.removeItem('if_access_token');
+  localStorage.removeItem('if_refresh_token');
   currentUser = null;
   isMember = false;
   isAdmin = false;
@@ -620,11 +660,11 @@ function closeHistory() {
 }
 
 function getFleetInfo(reg) {
-  if (!reg) return { manufacturer: '—', model: '—', usage: '—', avion: '—' };
+  if (!reg) return { manufacturer: '—', model: '—', usage: '—', avion: '—', mtow: '—', mlw: '—', oew: '—' };
   const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
-  if (!ac) return { manufacturer: '—', model: '—', usage: '—', avion: '—' };
+  if (!ac) return { manufacturer: '—', model: '—', usage: '—', avion: '—', mtow: '—', mlw: '—', oew: '—' };
   const avion = ac.model && ac.model !== '—' ? ac.model : (ac.manufacturer && ac.manufacturer !== '—' ? ac.manufacturer : '—');
-  return { manufacturer: ac.manufacturer || '—', model: ac.model || '—', usage: ac.usage || '—', avion };
+  return { manufacturer: ac.manufacturer || '—', model: ac.model || '—', usage: ac.usage || '—', avion, mtow: ac.mtow || '—', mlw: ac.mlw || '—', oew: ac.oew || '—' };
 }
 
 function statusLabel(status) {
@@ -639,14 +679,27 @@ function statusLabel(status) {
   return map[status] || status;
 }
 
-function etaText(f) {
-  const eta = f.estimatedArrivalUtc || f.eta || f.estimatedArrival;
-  if (eta) {
-    const mins = Math.max(0, Math.round((new Date(eta) - Date.now()) / 60000));
-    if (mins > 0) return ` · Llega en ${mins} min`;
+function formatDuration(mins) {
+  if (!mins && mins !== 0) return '';
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
+}
+
+function statusTicker(f) {
+  const isActive = !f.actualArrivalUtc;
+  if (isActive) {
+    const eta = f.estimatedArrivalUtc || f.eta;
+    let extra = '';
+    if (eta) {
+      const mins = Math.max(0, Math.round((new Date(eta) - Date.now()) / 60000));
+      if (mins > 0) extra = ` · Llega en ${mins} min`;
+    }
+    return `<div class="status-ticker"><span>EN VUELO${extra}</span></div>`;
   }
-  if (f.remainingMinutes) return ` · ${f.remainingMinutes} min restantes`;
-  return '';
+  const dur = f.flightTimeMinutes ? formatDuration(f.flightTimeMinutes) : '';
+  const text = dur ? `Completado · ${dur}` : 'Completado';
+  return `<div class="status-ticker completed"><span>${text}</span></div>`;
 }
 
 function showHistory(reg) {
@@ -674,8 +727,8 @@ function showHistory(reg) {
             <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
             <td>${info.usage}</td>
             <td><span class="pill ${statusClass}">${statusText}</span></td>
-            <td>—</td>
-            <td>—</td>
+            <td>${info.mtow}</td>
+            <td>${info.mlw}</td>
             <td>—</td>
             <td>—</td>
             <td>—</td>
@@ -694,18 +747,10 @@ async function safeJson(res) {
   try { return JSON.parse(text); } catch { return { error: 'badjson', status: res.status }; }
 }
 
-function memberGate(actionName) {
-  if (!isMember && !isAdmin) {
-    showToast(t(`Únete a VistaJet Group para usar ${actionName}`, `Join VistaJet Group to use ${actionName}`), true);
-    return false;
-  }
-  return true;
-}
-
 function renderFleet() {
   const body = document.getElementById('fleetBody');
   if (!fleetCache.length) {
-    body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
     return;
   }
   body.innerHTML = fleetCache.map((ac, idx) => {
@@ -713,10 +758,13 @@ function renderFleet() {
     return `
       <tr>
         <td style="font-weight:700">${ac.registration || '—'}</td>
-        <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:120px">` : (ac.manufacturer || '—')}</td>
-        <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:100px">` : (ac.model || '—')}</td>
+        <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:100px">` : (ac.manufacturer || '—')}</td>
+        <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:80px">` : (ac.model || '—')}</td>
         <td>${ac.editing ? `<select id="use_${idx}"><option value="Privada" ${ac.usage==='Privada'?'selected':''}>Privada</option><option value="Cargo" ${ac.usage==='Cargo'?'selected':''}>Cargo</option><option value="Chárter" ${ac.usage==='Chárter'?'selected':''}>Chárter</option></select>` : (ac.usage || '—')}</td>
         <td><span class="pill ${st}">${statusLabel(st)}</span></td>
+        <td>${ac.editing ? `<input type="number" id="mtow_${idx}" value="${ac.mtow || ''}" style="width:80px">` : (ac.mtow || '—')}</td>
+        <td>${ac.editing ? `<input type="number" id="mlw_${idx}" value="${ac.mlw || ''}" style="width:80px">` : (ac.mlw || '—')}</td>
+        <td>${ac.editing ? `<input type="number" id="oew_${idx}" value="${ac.oew || ''}" style="width:80px">` : (ac.oew || '—')}</td>
         <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button>`) : ''}</td>
       </tr>
     `;
@@ -735,12 +783,18 @@ async function saveFleetEdit(idx) {
   const manufacturer = document.getElementById('mfr_' + idx).value.trim();
   const model = document.getElementById('mdl_' + idx).value.trim();
   const usage = document.getElementById('use_' + idx).value;
+  const mtow = document.getElementById('mtow_' + idx).value;
+  const mlw = document.getElementById('mlw_' + idx).value;
+  const oew = document.getElementById('oew_' + idx).value;
 
   const payload = {
     registration: ac.registration,
     manufacturer: manufacturer || null,
     model: model || null,
-    usage_type: usage
+    usage_type: usage,
+    mtow_kg: mtow ? parseInt(mtow) : null,
+    mlw_kg: mlw ? parseInt(mlw) : null,
+    oew_kg: oew ? parseInt(oew) : null
   };
 
   const { error } = await sb.from('fleet').upsert(payload, { onConflict: 'registration' });
@@ -752,6 +806,9 @@ async function saveFleetEdit(idx) {
   ac.manufacturer = manufacturer || '—';
   ac.model = model || '—';
   ac.usage = usage;
+  ac.mtow = mtow || '—';
+  ac.mlw = mlw || '—';
+  ac.oew = oew || '—';
   ac.editing = false;
   renderFleet();
   showToast('Flota actualizada');
@@ -764,7 +821,7 @@ async function loadFleet() {
   const { data: dbFleet, error } = await sb.from('fleet').select('*');
   if (error) {
     debug.textContent = 'Error: ' + error.message;
-    body.innerHTML = '<tr><td colspan="6" style="color:#ef4444">Error al cargar la flota</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" style="color:#ef4444">Error al cargar la flota</td></tr>';
     return;
   }
 
@@ -773,6 +830,9 @@ async function loadFleet() {
     manufacturer: f.manufacturer || '—',
     model: f.model || '—',
     usage: f.usage_type || '—',
+    mtow: f.mtow_kg || '—',
+    mlw: f.mlw_kg || '—',
+    oew: f.oew_kg || '—',
     status: f.status || 'available',
     editing: false
   }));
@@ -891,21 +951,16 @@ async function loadBitacora() {
 
     if (ifFlights.length) {
       body.innerHTML = ifFlights.map((f) => {
-        const isActive = !f.actualArrivalUtc;
-        const eta = etaText(f);
-        const statusLabelHtml = isActive
-          ? `<div class="flying-ticker"><span>EN VUELO${eta}</span></div>`
-          : (f.flightTimeMinutes ? (f.flightTimeMinutes / 60).toFixed(1) + ' h' : '—');
         const reg = f.registration || '—';
         const isSelected = selectedReg && reg.toUpperCase() === selectedReg.toUpperCase();
         return `
-          <tr style="${isActive ? 'background:#14372c' : ''}">
+          <tr style="${!f.actualArrivalUtc ? 'background:#14372c' : ''}">
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
             <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
             <td>${f.usage || '—'}</td>
-            <td>${statusLabelHtml}</td>
+            <td>${statusTicker(f)}</td>
             <td>${f.pilotName || '—'}</td>
           </tr>
         `;
@@ -919,6 +974,70 @@ async function loadBitacora() {
     ifDebug.textContent = 'Error — reconecta con IF';
     body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
   }
+}
+
+async function lookupICAO(inputId, infoId) {
+  const code = document.getElementById(inputId).value.trim().toUpperCase();
+  const info = document.getElementById(infoId);
+  if (code.length !== 4) { info.textContent = ''; return; }
+  try {
+    const res = await fetch(`https://airportsapi.com/api/airports/${code}`);
+    const data = await res.json();
+    if (data && data.name) {
+      info.textContent = `${data.name} · ${data.municipality || data.city || ''} · ${data.iso_country || data.country || ''}`;
+    } else {
+      info.textContent = t('No encontrado', 'Not found');
+    }
+  } catch(e) {
+    info.textContent = t('Error de consulta', 'Lookup error');
+  }
+}
+
+function loadAircraftSelect() {
+  const sel = document.getElementById('genAircraft');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">—</option>' + fleetCache.map(ac => `<option value="${ac.registration}">${ac.registration} · ${ac.model || ac.manufacturer || ''}</option>`).join('');
+}
+
+function loadAircraftConfig() {
+  const reg = document.getElementById('genAircraft').value;
+  const sel = document.getElementById('genConfig');
+  sel.innerHTML = '<option value="">—</option>';
+  if (!reg) return;
+  const configs = aircraftConfigs[reg.toUpperCase()] || [];
+  configs.forEach((c, i) => {
+    sel.innerHTML += `<option value="${i}">${c.name || 'Config ' + (i+1)}</option>`;
+  });
+}
+
+function applyConfig() {
+  const reg = document.getElementById('genAircraft').value;
+  const idx = document.getElementById('genConfig').value;
+  if (!reg || idx === '') return;
+  const configs = aircraftConfigs[reg.toUpperCase()] || [];
+  const c = configs[parseInt(idx)];
+  if (!c) return;
+  if (c.mtow) document.getElementById('genPayload').placeholder = `MTOW ${c.mtow}`;
+  if (c.fuel) document.getElementById('genFuel').value = c.fuel;
+  if (c.payload) document.getElementById('genPayload').value = c.payload;
+}
+
+function generateFlightNumber() {
+  if (!isMember && !isAdmin) {
+    showToast(t('Únete a VJG para usar el generador', 'Join VJG to use the generator'), true);
+    return;
+  }
+  const type = document.getElementById('genType').value;
+  const range = RANGES[type];
+  if (!range) return;
+  const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+  const origin = document.getElementById('genOrigin').value.trim().toUpperCase();
+  const dest = document.getElementById('genDest').value.trim().toUpperCase();
+  const ac = document.getElementById('genAircraft').value;
+  const payload = document.getElementById('genPayload').value;
+  const fuel = document.getElementById('genFuel').value;
+  document.getElementById('genResult').textContent = `VJT ${num}`;
+  showToast(`VJT ${num} · ${origin || '?'} → ${dest || '?'} · ${ac || ''}`);
 }
 
 function loadHubs() { document.getElementById('hubsContent').innerHTML = '<div class="hub"><strong>MMLO</strong>Hub principal</div>'; }
