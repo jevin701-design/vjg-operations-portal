@@ -380,6 +380,13 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 </footer>
 
 <script>
+/*
+  REGLA GLOBAL VJG:
+  - Todas las páginas son visibles para todos.
+  - Herramientas interactivas (generador, datos en vivo de IF, etc.) solo para miembros de la organización VJG en Infinite Flight.
+  - Cualquier función editable (flota, hubs, etc.) solo puede ser editada por usuarios con is_admin = true en profiles.
+  - Si un no-miembro intenta usar una herramienta, se muestra enlace "Únete a VistaJet Group".
+*/
 const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -518,6 +525,12 @@ async function checkVjgMembership() {
   return false;
 }
 
+async function checkAdmin() {
+  if (!currentUser || !currentUser.id || currentUser.id === 'if_user') return false;
+  const { data: profile } = await sb.from('profiles').select('is_admin').eq('user_id', currentUser.id).maybeSingle();
+  return profile?.is_admin === true;
+}
+
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -531,11 +544,10 @@ async function login() {
     return;
   }
   currentUser = data.user;
-  const { data: profile } = await sb.from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle();
-  isAdmin = profile?.is_admin === true;
+  isAdmin = await checkAdmin();
   document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
   document.getElementById('loginBtn').onclick = logout;
-  showToast('Sesión iniciada con correo');
+  showToast(isAdmin ? 'Sesión iniciada — Admin' : 'Sesión iniciada con correo');
   showView('home');
   updateGeneratorAccess();
 }
@@ -624,15 +636,9 @@ async function safeJson(res) {
   try { return JSON.parse(text); } catch { return { error: 'badjson', status: res.status }; }
 }
 
-function requireIFMember(debugEl, bodyEl, colspan) {
-  if (!ifConnected) {
-    debugEl.textContent = t('Conecta con Infinite Flight para ver datos de la organización', 'Connect with Infinite Flight to see organization data');
-    bodyEl.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>`;
-    return false;
-  }
+function memberGate(actionName) {
   if (!isMember) {
-    debugEl.textContent = t('No eres miembro de VistaJet Group', 'You are not a VistaJet Group member');
-    bodyEl.innerHTML = `<tr><td colspan="${colspan}" style="text-align:center"><a class="btn primary" href="https://live.infiniteflight.com/organization/${VJG_ORG_ID}" target="_blank">Únete a VistaJet Group</a></td></tr>`;
+    showToast(t(`Únete a VistaJet Group para usar ${actionName}`, `Join VistaJet Group to use ${actionName}`), true);
     return false;
   }
   return true;
@@ -657,11 +663,13 @@ function renderFleet() {
 }
 
 function editFleet(idx) {
+  if (!isAdmin) return;
   fleetCache[idx].editing = true;
   renderFleet();
 }
 
 async function saveFleetEdit(idx) {
+  if (!isAdmin) return;
   const ac = fleetCache[idx];
   const manufacturer = document.getElementById('mfr_' + idx).value.trim();
   const model = document.getElementById('mdl_' + idx).value.trim();
@@ -692,53 +700,49 @@ async function loadFleet() {
   const debug = document.getElementById('fleetDebug');
   const body = document.getElementById('fleetBody');
 
-  if (!requireIFMember(debug, body, 6)) return;
-
-  const token = localStorage.getItem('if_access_token');
-  try {
-    const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    const orgData = await safeJson(orgRes);
-
-    if (orgData.error || !orgData.result || !orgData.result.length || orgRes.status === 401) {
-      localStorage.removeItem('if_access_token');
-      ifConnected = false;
-      isMember = false;
-      debug.textContent = t('Token vencido — reconecta', 'Token expired — reconnect');
-      body.innerHTML = '<tr><td colspan="6" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar con Infinite Flight</button></td></tr>';
-      return;
-    }
-
-    const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
-    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    const acData = await safeJson(acRes);
-    const aircraftList = acData.result || [];
-
-    const { data: dbFleet } = await sb.from('fleet').select('*');
-    const dbMap = {};
-    (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
-
-    fleetCache = aircraftList.map(ac => {
-      const reg = ac.registration || '—';
-      const db = dbMap[reg.toUpperCase()] || {};
-      return {
-        registration: reg,
-        manufacturer: db.manufacturer || '—',
-        model: db.model || '—',
-        usage: db.usage_type || '—',
-        status: ac.isFlying ? 'flying' : 'available',
-        editing: false
-      };
-    });
-
-    debug.textContent = `${t('Aeronaves en la organización', 'Aircraft in organization')}: ${fleetCache.length}`;
-    renderFleet();
-  } catch (e) {
-    debug.textContent = 'Error: ' + e.message;
+  const { data: dbFleet, error } = await sb.from('fleet').select('*');
+  if (error) {
+    debug.textContent = 'Error: ' + error.message;
     body.innerHTML = '<tr><td colspan="6" style="color:#ef4444">Error al cargar la flota</td></tr>';
+    return;
+  }
+
+  fleetCache = (dbFleet || []).map(f => ({
+    registration: f.registration || '—',
+    manufacturer: f.manufacturer || '—',
+    model: f.model || '—',
+    usage: f.usage_type || '—',
+    status: f.status || 'available',
+    editing: false
+  }));
+
+  debug.textContent = `${t('Aeronaves en la flota', 'Aircraft in fleet')}: ${fleetCache.length}`;
+  renderFleet();
+
+  if (ifConnected && isMember) {
+    const token = localStorage.getItem('if_access_token');
+    try {
+      const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const orgData = await safeJson(orgRes);
+      if (orgData.result && orgData.result.length) {
+        const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
+        const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const acData = await safeJson(acRes);
+        const aircraftList = acData.result || [];
+        aircraftList.forEach(ac => {
+          const reg = (ac.registration || '').toUpperCase();
+          const existing = fleetCache.find(f => (f.registration || '').toUpperCase() === reg);
+          if (existing) {
+            existing.status = ac.isFlying ? 'flying' : 'available';
+          }
+        });
+        renderFleet();
+      }
+    } catch(e) {}
   }
 }
 
@@ -748,16 +752,16 @@ async function loadBitacora() {
   const ifDebug = document.getElementById('ifDebug');
   const body = document.getElementById('ifFlightsBody');
 
+  ifCard.style.display = 'block';
+
   if (!ifConnected || !isMember) {
-    statusEl.textContent = t('Conecta con Infinite Flight y únete a VJG para ver la bitácora', 'Connect with Infinite Flight and join VJG to see the logbook');
-    ifCard.style.display = 'block';
+    statusEl.textContent = t('Bitácora visible — únete a VJG y conecta con IF para datos en vivo', 'Logbook visible — join VJG and connect with IF for live data');
     ifDebug.textContent = '';
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center"><a class="btn primary" href="https://live.infiniteflight.com/organization/${VJG_ORG_ID}" target="_blank">Únete a VistaJet Group</a></td></tr>`;
     return;
   }
 
   statusEl.textContent = t('Sesión activa — miembro de VJG', 'Active session — VJG member');
-  ifCard.style.display = 'block';
 
   const token = localStorage.getItem('if_access_token');
   try {
@@ -861,6 +865,7 @@ function updateGeneratorAccess() {
 sb.auth.getSession().then(async ({ data: { session } }) => {
   if (session) {
     currentUser = session.user;
+    isAdmin = await checkAdmin();
     document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
     document.getElementById('loginBtn').onclick = logout;
   }
