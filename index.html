@@ -952,8 +952,15 @@ async function loadBitacora() {
       statusEl.textContent = t('Bitácora (datos guardados)', 'Logbook (saved data)');
       ifDebug.textContent = `${cached.length} vuelos`;
       body.innerHTML = cached.map(f => {
-        const isActive = f.status === 0 || (f.status === undefined && !f.actual_arrival_utc);
-        const statusTxt = f.status_display || (isActive ? 'EN VUELO' : 'Completado');
+        const isActive = !f.actual_arrival_utc;
+        let statusTxt = 'Completado';
+        if (isActive) {
+          statusTxt = 'EN VUELO';
+        } else if (f.flight_time_minutes) {
+          const h = Math.floor(f.flight_time_minutes / 60);
+          const m = Math.round(f.flight_time_minutes % 60);
+          statusTxt = `Completado · ${h}h ${m}min`;
+        }
         const statusHtml = `<div class="status-ticker ${isActive ? '' : 'completed'}"><span>${statusTxt}</span></div>`;
         return `
           <tr style="${isActive ? 'background:#14372c' : ''}">
@@ -1090,7 +1097,9 @@ async function loadBitacora() {
       };
     });
     if (rows.length) {
-      sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
+      sb.from('bitacora_cache').delete().neq('id', '___none___').then(() => {
+        sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
+      });
     }
     ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
 
