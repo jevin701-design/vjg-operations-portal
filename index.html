@@ -528,7 +528,7 @@ function toggleLang() {
   document.documentElement.lang = currentLang;
   document.querySelectorAll('[data-es]').forEach(el => {
     const val = el.getAttribute('data-' + currentLang);
-    if (val) el.textContent = val;
+    if (val) el.innerHTML = val;
   });
   document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
   if (selectedReg) showHistory(selectedReg);
