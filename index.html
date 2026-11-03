@@ -420,15 +420,15 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <p style="color:var(--muted);font-size:14px;margin-bottom:16px" data-es="Inicia con Infinite Flight o únete a VistaJet Group para usar las herramientas." data-en="Sign in with Infinite Flight or join VistaJet Group to use the tools.">Inicia con Infinite Flight o únete a VistaJet Group para usar las herramientas.</p>
       <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="startIFLogin()" data-es="Iniciar sesión con Infinite Flight" data-en="Sign in with Infinite Flight">Iniciar sesión con Infinite Flight</button>
       <a class="btn" style="width:100%;display:block;text-align:center;text-decoration:none;margin-bottom:16px" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</a>
-      <p style="text-align:center;color:var(--muted);margin:12px 0;font-size:13px" data-es="— Admin —" data-en="— Admin —">— Admin —</p>
-      <input id="email" type="email" placeholder="Correo (admin)">
-      <div style="position:relative;">
+      <div id="adminLogin" class="hidden">
+        <p style="text-align:center;color:var(--muted);margin:12px 0;font-size:13px">— Admin —</p>
+        <input id="email" type="email" placeholder="Correo (admin)">
         <input id="password" type="password" placeholder="Contraseña">
+        <label class="checkbox">
+          <input type="checkbox" id="remember"> <span>Recordar correo</span>
+        </label>
+        <button class="btn" style="width:100%;margin-top:8px" onclick="login()">Entrar como admin</button>
       </div>
-      <label class="checkbox">
-        <input type="checkbox" id="remember"> <span data-es="Recordar correo" data-en="Remember email">Recordar correo</span>
-      </label>
-      <button class="btn" style="width:100%;margin-top:8px" onclick="login()" data-es="Entrar como admin" data-en="Sign in as admin">Entrar como admin</button>
       <p id="loginError" style="color:#ef4444; font-size:14px; margin-top:12px;"></p>
       <div id="notMember" class="member-notice hidden">
         <p data-es="No eres miembro de VistaJet Group. Únete para usar las herramientas." data-en="You are not a VistaJet Group member. Join to use the tools.">No eres miembro de VistaJet Group. Únete para usar las herramientas.</p>
