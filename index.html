@@ -762,7 +762,7 @@ function showHistory(reg) {
         return `
           <tr>
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-            <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+            <td>${f.originIcao || f.origin || '?'} → ${f.destinationIcao || f.destination || f.arrivalIcao || (f.originIcao && f.status === 0 ? '…' : '?')}</td>
             <td>${info.usage}</td>
             <td><span class="pill ${statusClass}">${statusText}</span></td>
             <td>${info.mtow}</td>
@@ -983,7 +983,7 @@ async function loadBitacora() {
             <td>${f.actual_departure_utc ? new Date(f.actual_departure_utc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration || '—'}</a></td>
-            <td>${f.origin_icao || '?'} → ${f.destination_icao || '?'}</td>
+            <td>${f.origin_icao || '?'} → ${f.destination_icao && f.destination_icao !== f.origin_icao ? f.destination_icao : (f.actual_arrival_utc ? '?' : '…')}</td>
             <td>${f.usage_type || '—'}</td>
             <td>${statusHtml}</td>
             <td>${f.pilot_name || '—'}</td>
@@ -1128,7 +1128,7 @@ async function loadBitacora() {
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
-            <td>${f.originIcao || '?'} → ${f.destinationIcao || '?'}</td>
+            <td>${f.originIcao || f.origin || '?'} → ${f.destinationIcao || f.destination || f.arrivalIcao || (f.originIcao && f.status === 0 ? '…' : '?')}</td>
             <td>${f.usage || '—'}</td>
             <td>${statusTicker(f)}</td>
             <td>${f.pilotName || '—'}</td>
