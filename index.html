@@ -762,7 +762,7 @@ function showHistory(reg) {
         return `
           <tr>
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-            <td>${f.originIcao || f.origin || '?'} → ${f.destinationIcao || f.destination || f.arrivalIcao || (f.originIcao && f.status === 0 ? '…' : '?')}</td>
+            <td>${f.originIcao || '?'} → ${f.destinationIcao || '…'}</td>
             <td>${info.usage}</td>
             <td><span class="pill ${statusClass}">${statusText}</span></td>
             <td>${info.mtow}</td>
@@ -983,7 +983,7 @@ async function loadBitacora() {
             <td>${f.actual_departure_utc ? new Date(f.actual_departure_utc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration || '—'}</a></td>
-            <td>${f.origin_icao || '?'} → ${f.destination_icao && f.destination_icao !== f.origin_icao ? f.destination_icao : (f.actual_arrival_utc ? '?' : '…')}</td>
+            <td>${f.origin_icao || '?'} → ${f.destination_icao || '…'}</td>
             <td>${f.usage_type || '—'}</td>
             <td>${statusHtml}</td>
             <td>${f.pilot_name || '—'}</td>
@@ -1046,13 +1046,20 @@ async function loadBitacora() {
       if (flData.result && flData.result.items) {
         const reg = ac.registration || '—';
         const db = dbMap[reg.toUpperCase()] || {};
-        const items = flData.result.items.map(f => ({
-          ...f,
-          registration: reg,
-          avion: db.model || db.manufacturer || '—',
-          usage: db.usage_type || '—',
-          pilotName: (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : (f.pilotName || f.username || f.pilot || '—')
-        }));
+        const items = flData.result.items.map(f => {
+          const origin = f.originIcao || f.origin || f.departureIcao || null;
+          let dest = f.destinationIcao || f.destination || f.arrivalIcao || null;
+          if (dest && origin && dest === origin) dest = null;
+          return {
+            ...f,
+            originIcao: origin,
+            destinationIcao: dest,
+            registration: reg,
+            avion: db.model || db.manufacturer || '—',
+            usage: db.usage_type || '—',
+            pilotName: (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : (f.pilotName || f.username || f.pilot || '—')
+          };
+        });
         ifFlights.push(...items);
         activeCount += items.filter(f => !f.actualArrivalUtc).length;
       }
@@ -1113,7 +1120,7 @@ async function loadBitacora() {
       };
     });
     if (rows.length) {
-      sb.from('bitacora_cache').delete().neq('id', '___none___').then(() => {
+      sb.from('bitacora_cache').delete().neq('id', 'clear').then(() => {
         sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
       });
     }
@@ -1128,7 +1135,7 @@ async function loadBitacora() {
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
-            <td>${f.originIcao || f.origin || '?'} → ${f.destinationIcao || f.destination || f.arrivalIcao || (f.originIcao && f.status === 0 ? '…' : '?')}</td>
+            <td>${f.originIcao || '?'} → ${f.destinationIcao || '…'}</td>
             <td>${f.usage || '—'}</td>
             <td>${statusTicker(f)}</td>
             <td>${f.pilotName || '—'}</td>
