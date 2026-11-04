@@ -1039,17 +1039,31 @@ async function loadBitacora() {
     let activeCount = 0;
 
     for (const ac of aircraftList.slice(0, 15)) {
+      const reg = ac.registration || '—';
+      const db = dbMap[reg.toUpperCase()] || {};
+      // Get schedules for planned destination
+      let schedules = [];
+      try {
+        const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/schedules`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const schData = await safeJson(schRes);
+        schedules = schData.result || [];
+      } catch(e) {}
       const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
         headers: { Authorization: 'Bearer ' + token }
       });
       const flData = await safeJson(flRes);
       if (flData.result && flData.result.items) {
-        const reg = ac.registration || '—';
-        const db = dbMap[reg.toUpperCase()] || {};
         const items = flData.result.items.map(f => {
-          const origin = f.originIcao || f.origin || f.departureIcao || null;
-          let dest = f.destinationIcao || f.destination || f.arrivalIcao || null;
-          if (dest && origin && dest === origin) dest = null;
+          const origin = f.originIcao || f.origin || null;
+          let dest = f.destinationIcao || f.destination || null;
+          // If dest equals origin (active flight), try to get planned dest from schedule
+          if (!dest || dest === origin) {
+            const match = schedules.find(s => s.originIcao === origin && s.destinationIcao && s.destinationIcao !== origin);
+            if (match) dest = match.destinationIcao;
+            else if (dest === origin) dest = null;
+          }
           return {
             ...f,
             originIcao: origin,
