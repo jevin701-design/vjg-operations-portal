@@ -39,6 +39,15 @@ header {
   text-decoration: none; color: white;
 }
 .brand span { color: var(--red); }
+.brand img {
+  height: 46px;
+  width: auto;
+  vertical-align: middle;
+  margin-right: 12px;
+}
+@media (max-width: 700px) {
+  .brand img { height: 38px; margin-right: 10px; }
+}
 nav {
   display: flex; flex-wrap: wrap; gap: 8px;
   margin-top: 12px; font-size: 14px;
@@ -185,7 +194,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 <div class="left-bar"></div>
 
 <header>
-  <a class="brand" href="#" onclick="showView('home'); return false;">VISTA<span>JET</span> GROUP</a>
+  <a class="brand" href="#" onclick="showView('home'); return false;"><img src="images/vjg_logo.png" alt="">VISTA<span>JET</span> GROUP</a>
   <nav>
     <a onclick="showView('about')" data-view="about" data-es="Acerca de" data-en="About Us">Acerca de</a>
     <a onclick="showView('staff')" data-view="staff" data-es="Nuestro staff" data-en="Our Staff">Nuestro staff</a>
