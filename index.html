@@ -681,9 +681,14 @@ async function sha256(str){
 async function startIFLogin(){
   const verifier = generateRandomString();
   const challenge = await sha256(verifier);
-  localStorage.setItem('if_code_verifier', verifier);
   const state = generateRandomString(16);
-  localStorage.setItem('if_state', state);
+  
+  // Store in both for maximum compatibility across redirects/mobile
+  try { localStorage.setItem('if_code_verifier', verifier); } catch(e) {}
+  try { sessionStorage.setItem('if_code_verifier', verifier); } catch(e) {}
+  try { localStorage.setItem('if_state', state); } catch(e) {}
+  try { sessionStorage.setItem('if_state', state); } catch(e) {}
+  
   const scope = 'openid profile live:organizations.read live:aircraft.read offline_access';
   const url = `https://api.infiniteflight.com/auth/v2/connect/authorize?response_type=code&client_id=${encodeURIComponent(IF_CLIENT_ID)}&redirect_uri=${encodeURIComponent(IF_REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
   window.location.href = url;
@@ -692,18 +697,18 @@ async function startIFLogin(){
 async function handleIFCallback(){
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
-  const state = params.get('state');
   if(!code) return;
-  const savedState = localStorage.getItem('if_state');
-  if(state && savedState && state !== savedState) {
-    console.warn('State mismatch detected, continuing anyway for compatibility');
-    // Continue instead of aborting – common on mobile redirects
-  }
-  const verifier = localStorage.getItem('if_code_verifier');
+
+  // Retrieve verifier from whichever storage still has it
+  let verifier = null;
+  try { verifier = localStorage.getItem('if_code_verifier') || sessionStorage.getItem('if_code_verifier'); } catch(e) {}
+  
   if(!verifier) {
-    showToast('No code verifier', true);
+    showToast('No se encontró el code verifier. Intenta iniciar sesión de nuevo.', true);
+    history.replaceState({}, '', IF_REDIRECT_URI);
     return;
   }
+
   try {
     const res = await fetch('/.netlify/functions/if-token', {
       method: 'POST',
@@ -732,14 +737,17 @@ async function handleIFCallback(){
         document.getElementById('notMember').classList.remove('hidden');
         showToast('Conectado, pero no eres miembro de VJG', true);
       }
+      // Clean up only on success
+      try { localStorage.removeItem('if_code_verifier'); } catch(e) {}
+      try { sessionStorage.removeItem('if_code_verifier'); } catch(e) {}
+      try { localStorage.removeItem('if_state'); } catch(e) {}
+      try { sessionStorage.removeItem('if_state'); } catch(e) {}
     } else {
-      showToast('Error token: ' + JSON.stringify(tokenData), true);
+      showToast('Error al obtener token: ' + (tokenData.error || JSON.stringify(tokenData)), true);
     }
   } catch(e) {
-    showToast('Error callback: ' + e.message, true);
+    showToast('Error en el callback: ' + e.message, true);
   }
-    localStorage.removeItem('if_code_verifier');
-  localStorage.removeItem('if_state');
   history.replaceState({}, '', IF_REDIRECT_URI);
 }
 
@@ -1428,5 +1436,6 @@ handleIFCallback();
 </script>
 </body>
 </html>
+
 
 
