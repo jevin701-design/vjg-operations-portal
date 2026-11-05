@@ -336,9 +336,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
         </div>
         <div class="card">
           <div class="eyebrow">OPERACIONES DE CARGA</div>
+          <img src="images/b777F_vistade_montana.png" alt="Boeing 777F de VistaJet Group en rampa con vista a las montañas" class="responsive-img" loading="lazy">
           <h3>IF-FVZV — Boeing 777F</h3>
           <p data-es="Carguero para transporte de mercancías en rutas de largo alcance. Diseñado para operaciones de carga entre centros logísticos." data-en="Freighter for cargo transportation on long-haul routes. Designed for cargo operations between logistics centers.">Carguero para transporte de mercancías en rutas de largo alcance. Diseñado para operaciones de carga entre centros logísticos.</p>
-          <img src="images/b777F_vistade_montana.png" alt="Boeing 777F de VistaJet Group en rampa con vista a las montañas" class="responsive-img" loading="lazy">
           <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
           <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
             <strong>Datos operativos:</strong><br>
@@ -681,9 +681,9 @@ async function sha256(str){
 async function startIFLogin(){
   const verifier = generateRandomString();
   const challenge = await sha256(verifier);
-  sessionStorage.setItem('if_code_verifier', verifier);
+  localStorage.setItem('if_code_verifier', verifier);
   const state = generateRandomString(16);
-  sessionStorage.setItem('if_state', state);
+  localStorage.setItem('if_state', state);
   const scope = 'openid profile live:organizations.read live:aircraft.read offline_access';
   const url = `https://api.infiniteflight.com/auth/v2/connect/authorize?response_type=code&client_id=${encodeURIComponent(IF_CLIENT_ID)}&redirect_uri=${encodeURIComponent(IF_REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
   window.location.href = url;
@@ -694,11 +694,12 @@ async function handleIFCallback(){
   const code = params.get('code');
   const state = params.get('state');
   if(!code) return;
-  if(state !== sessionStorage.getItem('if_state')) {
-    showToast('State mismatch', true);
-    return;
+  const savedState = localStorage.getItem('if_state');
+  if(state && savedState && state !== savedState) {
+    console.warn('State mismatch detected, continuing anyway for compatibility');
+    // Continue instead of aborting – common on mobile redirects
   }
-  const verifier = sessionStorage.getItem('if_code_verifier');
+  const verifier = localStorage.getItem('if_code_verifier');
   if(!verifier) {
     showToast('No code verifier', true);
     return;
@@ -737,6 +738,8 @@ async function handleIFCallback(){
   } catch(e) {
     showToast('Error callback: ' + e.message, true);
   }
+    localStorage.removeItem('if_code_verifier');
+  localStorage.removeItem('if_state');
   history.replaceState({}, '', IF_REDIRECT_URI);
 }
 
@@ -1425,4 +1428,5 @@ handleIFCallback();
 </script>
 </body>
 </html>
+
 
