@@ -308,16 +308,46 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <div class="eyebrow">AVIACIÓN PRIVADA</div>
           <h3>IF-DUOA — Bombardier Challenger 350</h3>
           <p data-es="Aeronave ejecutiva para vuelos privados y misiones de negocios. Ideal para rutas de mediano alcance con flexibilidad operativa." data-en="Business aircraft for private flights and business missions. Ideal for medium-range routes with operational flexibility.">Aeronave ejecutiva para vuelos privados y misiones de negocios. Ideal para rutas de mediano alcance con flexibilidad operativa.</p>
+          <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
+          <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
+            <strong>Datos operativos:</strong><br>
+            Uso VJG: Aviación privada · Registro: IF-DUOA · OACI: CL35 · Categoría IF: B<br>
+            Alcance de referencia: 3,200 NM<br>
+            Crucero: Mach 0.80–0.82 · MMO: Mach 0.83 · techo: FL450<br>
+            Envergadura: 21.0 m · MTOW: 18,416 kg · MLW: 15,490 kg<br>
+            Motores: 2 × Honeywell HTF7350 · capacidad: hasta 15 pasajeros<br>
+            Límites de flaps: 10/20 hasta 210 kt; 30 hasta 175 kt
+          </div>
         </div>
         <div class="card">
           <div class="eyebrow">OPERACIONES DE CARGA</div>
           <h3>IF-FVZV — Boeing 777F</h3>
           <p data-es="Carguero para transporte de mercancías en rutas de largo alcance. Diseñado para operaciones de carga entre centros logísticos." data-en="Freighter for cargo transportation on long-haul routes. Designed for cargo operations between logistics centers.">Carguero para transporte de mercancías en rutas de largo alcance. Diseñado para operaciones de carga entre centros logísticos.</p>
+          <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
+          <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
+            <strong>Datos operativos:</strong><br>
+            Uso VJG: Operaciones de carga · Registro: IF-FVZV · OACI: B77L · Categoría IF: E<br>
+            Alcance de referencia: 4,968 NM<br>
+            Crucero publicado: Mach 0.84 · QRG: Mach 0.82 · MMO: Mach 0.87 · techo: FL431<br>
+            Envergadura: 64.80 m · MTOW: 347,815 kg · MLW: 260,810 kg<br>
+            Motores: 2 × GE90-110B / GE90-115B · configuración de carga: 0 pasajeros<br>
+            Límites de flaps: 1: 255 kt; 5: 235 kt; 15: 215 kt; 20: 195 kt; 25: 185 kt; 30: 170 kt
+          </div>
         </div>
         <div class="card">
           <div class="eyebrow">PASAJEROS / CHÁRTER</div>
           <h3>IF-JNPB — Airbus A380-800</h3>
           <p data-es="Aeronave de alta capacidad para operaciones de pasajeros cuando la infraestructura del aeropuerto lo permite. Orientada a misiones chárter de gran volumen." data-en="High-capacity aircraft for passenger operations where airport infrastructure permits. Oriented to high-volume charter missions.">Aeronave de alta capacidad para operaciones de pasajeros cuando la infraestructura del aeropuerto lo permite. Orientada a misiones chárter de gran volumen.</p>
+          <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
+          <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
+            <strong>Datos operativos:</strong><br>
+            Uso VJG: pasajeros / chárter · Registro: IF-JNPB · OACI: A388 · Categoría IF: F<br>
+            Alcance de referencia: 7,991 NM · capacidad: 779 pasajeros<br>
+            Crucero: Mach 0.85 · MMO: Mach 0.89 · techo: FL430<br>
+            Envergadura: 79.75 m · MTOW: 560,000 kg · MLW: 386,000 kg<br>
+            Planta motriz: 4 × Engine Alliance GP7000/GP7200 o 4 × Rolls-Royce Trent 900<br>
+            Límites de flaps: 1: 263 kt; 1+F: 222 kt; 2: 220 kt; 3: 196 kt; FULL: 182 kt
+          </div>
         </div>
       </div>
       <p data-es="Cada aeronave tiene un rol definido dentro de la organización y está registrada específicamente para las operaciones de VJG." data-en="Each aircraft has a defined role within the organization and is registered specifically for VJG operations.">Cada aeronave tiene un rol definido dentro de la organización y está registrada específicamente para las operaciones de VJG.</p>
@@ -486,20 +516,32 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     </section>
   </div>
 
+  <div id="view-admin" class="view">
+    <section class="section">
+      <div class="eyebrow">PANEL DE ADMINISTRACIÓN</div>
+      <h2>Miembros</h2>
+      <p class="lead">Gestiona los miembros de VistaJet Group. Puedes ver cómo iniciaron sesión y asignar roles.</p>
+      <div id="membersList" style="margin-top:20px">
+        <p style="color:var(--muted)">Cargando miembros...</p>
+      </div>
+    </section>
+  </div>
+
   <div id="view-login" class="view">
     <div class="login-box">
       <h2 data-es="Acceso" data-en="Access">Acceso</h2>
       <p style="color:var(--muted);font-size:14px;margin-bottom:16px" data-es="Inicia con Infinite Flight o únete a VistaJet Group para usar las herramientas." data-en="Sign in with Infinite Flight or join VistaJet Group to use the tools.">Inicia con Infinite Flight o únete a VistaJet Group para usar las herramientas.</p>
       <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="startIFLogin()" data-es="Iniciar sesión con Infinite Flight" data-en="Sign in with Infinite Flight">Iniciar sesión con Infinite Flight</button>
       <a class="btn" style="width:100%;display:block;text-align:center;text-decoration:none;margin-bottom:16px" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</a>
-      <div id="adminLogin" class="hidden">
-        <p style="text-align:center;color:var(--muted);margin:12px 0;font-size:13px">— Admin —</p>
-        <input id="email" type="email" placeholder="Correo (admin)">
+      <div id="adminLogin" style="margin-top:20px;padding-top:16px;border-top:1px solid #333">
+        <p style="text-align:center;color:var(--muted);margin:8px 0 12px;font-size:13px">— Acceso administrador —</p>
+        <input id="email" type="email" placeholder="Correo del administrador">
         <input id="password" type="password" placeholder="Contraseña">
         <label class="checkbox">
           <input type="checkbox" id="remember"> <span>Recordar correo</span>
         </label>
-        <button class="btn" style="width:100%;margin-top:8px" onclick="login()">Entrar como admin</button>
+        <button class="btn primary" style="width:100%;margin-top:8px" onclick="login()">Entrar como administrador</button>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Solo cuentas con is_admin = true en la tabla profiles pueden acceder como administrador.</p>
       </div>
       <p id="loginError" style="color:#ef4444; font-size:14px; margin-top:12px;"></p>
       <div id="notMember" class="member-notice hidden">
@@ -601,6 +643,7 @@ function showView(name) {
   if (name === 'hubs') loadHubs();
   if (name === 'bitacora') loadBitacora();
   if (name === 'generator') { updateGeneratorAccess(); loadAircraftSelect(); }
+  if (name === 'admin') loadMembers();
 }
 
 function togglePassword() {
@@ -714,11 +757,53 @@ async function login() {
   }
   currentUser = data.user;
   isAdmin = await checkAdmin();
+  if (!isAdmin) {
+    await sb.auth.signOut();
+    currentUser = null;
+    document.getElementById('loginError').textContent = 'Esta cuenta no tiene permisos de administrador.';
+    return;
+  }
   document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
   document.getElementById('loginBtn').onclick = logout;
-  showToast(isAdmin ? 'Sesión iniciada — Admin' : 'Sesión iniciada con correo');
-  showView('home');
+  showToast('Sesión iniciada — Administrador');
+  showView('admin');
   updateGeneratorAccess();
+}
+
+
+async function loadMembers() {
+  if (!isAdmin) return;
+  const list = document.getElementById('membersList');
+  list.innerHTML = '<p style="color:var(--muted)">Cargando...</p>';
+  const { data, error } = await sb.from('profiles').select('user_id, is_admin, email, created_at').order('created_at', { ascending: false });
+  if (error) {
+    list.innerHTML = '<p style="color:#ef4444">Error al cargar miembros: ' + error.message + '</p>';
+    return;
+  }
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p>No hay miembros registrados aún.</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Usuario / Email</th><th>Admin</th><th>Acciones</th></tr></thead><tbody>';
+  data.forEach(p => {
+    html += `<tr>
+      <td>${p.email || p.user_id}</td>
+      <td>${p.is_admin ? 'Sí' : 'No'}</td>
+      <td>${p.is_admin ? '' : '<button class="btn" style="font-size:12px" onclick="makeAdmin(\'' + p.user_id + '\')">Hacer admin</button>'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  list.innerHTML = html;
+}
+
+async function makeAdmin(userId) {
+  if (!confirm('¿Convertir este usuario en administrador?')) return;
+  const { error } = await sb.from('profiles').update({ is_admin: true }).eq('user_id', userId);
+  if (error) showToast('Error: ' + error.message, true);
+  else {
+    showToast('Usuario actualizado a administrador');
+    loadMembers();
+  }
 }
 
 async function logout() {
