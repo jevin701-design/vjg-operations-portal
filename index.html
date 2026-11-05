@@ -39,15 +39,25 @@ header {
   text-decoration: none; color: white;
 }
 .brand span { color: var(--red); }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .brand img {
-  height: 52px;
+  height: 48px;
   width: auto;
-  vertical-align: middle;
-  display: inline-block;
-  margin-right: 8px;
+  display: block;
+}
+.brand-text {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: white;
 }
 @media (max-width: 700px) {
   .brand img { height: 40px; }
+  .brand-text { font-size: 18px; }
 }
 nav {
   display: flex; flex-wrap: wrap; gap: 8px;
@@ -195,7 +205,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 <div class="left-bar"></div>
 
 <header>
-  <a class="brand" href="#" onclick="showView('home'); return false;"><img src="images/vjg_logo.png" alt="VistaJet Group"></a>
+  <a class="brand" href="#" onclick="showView('home'); return false;"><img src="images/vjg_logo.png" alt=""><span class="brand-text">VISTA<span>JET</span> GROUP</span></a>
   <nav>
     <a onclick="showView('about')" data-view="about" data-es="Acerca de" data-en="About Us">Acerca de</a>
     <a onclick="showView('staff')" data-view="staff" data-es="Nuestro staff" data-en="Our Staff">Nuestro staff</a>
