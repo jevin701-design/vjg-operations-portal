@@ -1266,6 +1266,18 @@ async function loadBitacora() {
         const schData = await safeJson(schRes);
         schedules = schData.result || [];
       } catch(e) {}
+      // Check current position — if flying, force an active entry
+      let isCurrentlyFlying = false;
+      try {
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const posData = await safeJson(posRes);
+        if (posData.result && (posData.result.altitude > 100 || posData.result.groundSpeed > 30)) {
+          isCurrentlyFlying = true;
+        }
+      } catch(e) {}
+
       const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=15`, {
         headers: { Authorization: 'Bearer ' + token }
       });
@@ -1292,6 +1304,23 @@ async function loadBitacora() {
         });
         ifFlights.push(...items);
         activeCount += items.filter(f => !f.actualArrivalUtc).length;
+
+        // If position says flying but no active flight in log, add synthetic active entry
+        if (isCurrentlyFlying && !items.some(f => !f.actualArrivalUtc)) {
+          ifFlights.push({
+            registration: reg,
+            avion: db.model || db.manufacturer || '—',
+            usage: db.usage_type || '—',
+            originIcao: ac.lastAirport || '?',
+            destinationIcao: '…',
+            actualDepartureUtc: new Date().toISOString(),
+            actualArrivalUtc: null,
+            status: 0,
+            pilotName: 'En vuelo',
+            id: 'live-' + ac.id
+          });
+          activeCount++;
+        }
       }
     }
 
