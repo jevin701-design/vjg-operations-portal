@@ -1278,7 +1278,7 @@ async function loadBitacora() {
         }
       } catch(e) {}
 
-      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=15`, {
+      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=50`, {
         headers: { Authorization: 'Bearer ' + token }
       });
       const flData = await safeJson(flRes);
@@ -1303,7 +1303,7 @@ async function loadBitacora() {
           };
         });
         ifFlights.push(...items);
-        activeCount += items.filter(f => !f.actualArrivalUtc).length;
+        activeCount += items.filter(f => f.status === 0 || !f.actualArrivalUtc).length;
       }
 
       // Always add synthetic active if position says flying and none exists yet
