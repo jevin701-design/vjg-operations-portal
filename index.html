@@ -1246,7 +1246,7 @@ async function loadBitacora() {
     const ifFlights = [];
     let activeCount = 0;
 
-    for (const ac of aircraftList.slice(0, 15)) {
+    for (const ac of aircraftList.slice(0, 25)) {
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
       // Get schedules for planned destination
@@ -1258,7 +1258,7 @@ async function loadBitacora() {
         const schData = await safeJson(schRes);
         schedules = schData.result || [];
       } catch(e) {}
-      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
+      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=15`, {
         headers: { Authorization: 'Bearer ' + token }
       });
       const flData = await safeJson(flRes);
