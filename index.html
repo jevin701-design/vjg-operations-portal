@@ -1161,8 +1161,8 @@ async function loadBitacora() {
 
   ifCard.style.display = 'block';
 
-  const canSeeLive = isAdmin || (ifConnected && isMember);
   const token = localStorage.getItem('if_access_token');
+  const canSeeLive = isAdmin || !!token;
 
   // No live access: load from cache
   if (!canSeeLive || !token) {
