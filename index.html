@@ -1258,7 +1258,7 @@ async function loadBitacora() {
         const schData = await safeJson(schRes);
         schedules = schData.result || [];
       } catch(e) {}
-      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=100`, {
+      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=20`, {
         headers: { Authorization: 'Bearer ' + token }
       });
       const flData = await safeJson(flRes);
@@ -1279,7 +1279,7 @@ async function loadBitacora() {
             registration: reg,
             avion: db.model || db.manufacturer || '—',
             usage: db.usage_type || '—',
-            pilotName: (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : (f.pilotName || f.username || f.pilot || '—')
+            pilotName: (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name || c.displayName).filter(Boolean).join(', ') : (f.pilotName || f.username || f.pilot || f.lastPilotUsername || '—')
           };
         });
         ifFlights.push(...items);
