@@ -738,16 +738,9 @@ async function handleIFCallback(){
       currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
       document.getElementById('loginBtn').onclick = logout;
-      const isVjg = await checkVjgMembership();
-      if (isVjg || isAdmin) {
-        isMember = true;
-        showToast('Conectado con Infinite Flight');
-        showView('home');
-      } else {
-        isMember = false;
-        document.getElementById('notMember').classList.remove('hidden');
-        showToast('Conectado, pero no eres miembro de VJG', true);
-      }
+      isMember = true;
+      showToast('Conectado con Infinite Flight');
+      showView('bitacora');
       // Clean up only on success
       try { localStorage.removeItem('if_code_verifier'); } catch(e) {}
       try { sessionStorage.removeItem('if_code_verifier'); } catch(e) {}
@@ -1162,7 +1155,7 @@ async function loadBitacora() {
   ifCard.style.display = 'block';
 
   const token = localStorage.getItem('if_access_token');
-  const canSeeLive = isAdmin || !!token;
+  const canSeeLive = true; // Always try to show flights
 
   // No live access: load from cache
   if (!canSeeLive || !token) {
