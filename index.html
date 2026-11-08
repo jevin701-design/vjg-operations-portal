@@ -1304,23 +1304,23 @@ async function loadBitacora() {
         });
         ifFlights.push(...items);
         activeCount += items.filter(f => !f.actualArrivalUtc).length;
+      }
 
-        // If position says flying but no active flight in log, add synthetic active entry
-        if (isCurrentlyFlying && !items.some(f => !f.actualArrivalUtc)) {
-          ifFlights.push({
-            registration: reg,
-            avion: db.model || db.manufacturer || '—',
-            usage: db.usage_type || '—',
-            originIcao: ac.lastAirport || '?',
-            destinationIcao: '…',
-            actualDepartureUtc: new Date().toISOString(),
-            actualArrivalUtc: null,
-            status: 0,
-            pilotName: 'En vuelo',
-            id: 'live-' + ac.id
-          });
-          activeCount++;
-        }
+      // Always add synthetic active if position says flying and none exists yet
+      if (isCurrentlyFlying && !ifFlights.some(f => f.registration === reg && !f.actualArrivalUtc)) {
+        ifFlights.push({
+          registration: reg,
+          avion: db.model || db.manufacturer || '—',
+          usage: db.usage_type || '—',
+          originIcao: ac.lastAirport || ac.homeAirport || '?',
+          destinationIcao: '…',
+          actualDepartureUtc: new Date().toISOString(),
+          actualArrivalUtc: null,
+          status: 0,
+          pilotName: 'En vuelo',
+          id: 'live-' + ac.id
+        });
+        activeCount++;
       }
     }
 
@@ -1389,7 +1389,7 @@ async function loadBitacora() {
         sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
       });
     }
-    ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
+    ifDebug.textContent = `Aeronaves: ${aircraftList.length} · Vuelos: ${ifFlights.length} · Activos: ${activeCount}`;
 
     if (ifFlights.length) {
       body.innerHTML = ifFlights.map((f) => {
