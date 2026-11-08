@@ -204,6 +204,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <a onclick="showView('ranks')" data-view="ranks" data-es="Rangos" data-en="Ranks">Rangos</a>
     <a onclick="showView('apply')" data-view="apply" data-es="Únete" data-en="Apply">Únete</a>
     <a onclick="showView('generator')" data-view="generator" data-es="Generador" data-en="Generator">Generador</a>
+    <a onclick="showView('bitacora')" data-view="bitacora" data-es="Bitácora" data-en="Logbook">Bitácora</a>
     
     <a id="adminNav" onclick="showView('admin')" data-view="admin" data-es="Panel" data-en="Panel" style="display:none">Panel</a>
   </nav>
@@ -485,6 +486,55 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     </section>
   </div>
 
+  <div id="view-bitacora" class="view">
+    <section class="section">
+      <div class="eyebrow">BITÁCORA</div>
+      <h2>Bitácora</h2>
+      <div class="card" style="margin-bottom:16px">
+        <p id="statusTextBit" style="margin:0;color:var(--muted)">Cargando...</p>
+      </div>
+      <div class="card" id="ifFlightsCard">
+        <h3 style="margin-top:0">Vuelos recientes de Infinite Flight</h3>
+        <p id="ifDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Avión</th>
+                <th>Matrícula</th>
+                <th>Ruta</th>
+                <th>Tipo</th>
+                <th>Estado / Tiempo</th>
+                <th>Piloto</th>
+              </tr>
+            </thead>
+            <tbody id="ifFlightsBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" id="historyCard" style="display:none;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0" id="historyTitle">Historial</h3>
+          <button class="btn" onclick="document.getElementById('historyCard').style.display='none'">Cerrar</button>
+        </div>
+        <div style="overflow-x:auto;margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Ruta</th>
+                <th>Estado / Tiempo</th>
+                <th>Piloto</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <div id="view-admin" class="view">
     <section class="section">
       <div class="eyebrow">PANEL DE ADMINISTRACIÓN</div>
@@ -605,6 +655,7 @@ function toggleLang() {
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
+  if (name === 'bitacora') loadBitacora();
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const link = document.querySelector(`nav a[data-view="${name}"]`);
   if (link) link.classList.add('active');
@@ -1093,6 +1144,135 @@ async function loadFleet() {
       } catch(e) {}
     }
   }
+}
+
+
+let ifFlightsCache = [];
+
+function statusTicker(text, isActive) {
+  const cls = isActive ? '' : 'completed';
+  return `<div class="status-ticker ${cls}"><span>${text}</span></div>`;
+}
+
+async function loadBitacora() {
+  const statusEl = document.getElementById('statusTextBit');
+  const ifDebug = document.getElementById('ifDebug');
+  const body = document.getElementById('ifFlightsBody');
+  const token = localStorage.getItem('if_access_token');
+
+  statusEl.textContent = 'Cargando vuelos...';
+  body.innerHTML = '<tr><td colspan="7" style="text-align:center">Cargando...</td></tr>';
+
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight para ver los vuelos';
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+    return;
+  }
+
+  try {
+    const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const orgData = await orgRes.json();
+    if (!orgData.result || !orgData.result.length) throw new Error('Sin organización');
+
+    const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
+
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const acData = await acRes.json();
+    const aircraftList = acData.result || [];
+
+    const { data: dbFleet } = await sb.from('fleet').select('*');
+    const dbMap = {};
+    (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
+
+    const allFlights = [];
+
+    for (const ac of aircraftList.slice(0, 25)) {
+      const reg = ac.registration || '—';
+      const db = dbMap[reg.toUpperCase()] || {};
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=20`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        if (flData.result && flData.result.items) {
+          for (const f of flData.result.items) {
+            const origin = f.originIcao || '?';
+            const dest = f.destinationIcao || '…';
+            const pilot = (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : '—';
+            const isActive = !f.actualArrivalUtc;
+            let statusText = 'Completado';
+            if (isActive) {
+              statusText = 'EN VUELO';
+            } else if (f.flightTimeMinutes) {
+              const h = Math.floor(f.flightTimeMinutes / 60);
+              const m = Math.round(f.flightTimeMinutes % 60);
+              statusText = `Completado · ${h}h ${m}min`;
+            }
+            allFlights.push({
+              date: f.actualDepartureUtc,
+              avion: db.model || db.manufacturer || '—',
+              registration: reg,
+              origin,
+              dest,
+              usage: db.usage_type || '—',
+              statusText,
+              pilot,
+              isActive,
+              flightTimeMinutes: f.flightTimeMinutes
+            });
+          }
+        }
+      } catch(e) {}
+    }
+
+    allFlights.sort((a, b) => {
+      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+      return new Date(b.date || 0) - new Date(a.date || 0);
+    });
+
+    ifFlightsCache = allFlights;
+    ifDebug.textContent = allFlights.length + ' vuelos';
+    statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
+
+    body.innerHTML = allFlights.slice(0, 40).map(f => `
+      <tr style="${f.isActive ? 'background:#14372c' : ''}">
+        <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
+        <td>${f.avion}</td>
+        <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration}</a></td>
+        <td>${f.origin} → ${f.dest}</td>
+        <td>${f.usage}</td>
+        <td>${statusTicker(f.statusText, f.isActive)}</td>
+        <td>${f.pilot}</td>
+      </tr>
+    `).join('');
+
+  } catch (e) {
+    statusEl.textContent = 'Error';
+    ifDebug.textContent = e.message;
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar</button></td></tr>';
+  }
+}
+
+function showHistory(reg) {
+  const card = document.getElementById('historyCard');
+  const title = document.getElementById('historyTitle');
+  const body = document.getElementById('historyBody');
+  title.textContent = 'Historial de ' + reg;
+  const flights = ifFlightsCache.filter(f => f.registration === reg);
+  body.innerHTML = flights.map(f => `
+    <tr>
+      <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
+      <td>${f.origin} → ${f.dest}</td>
+      <td>${statusTicker(f.statusText, f.isActive)}</td>
+      <td>${f.pilot}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4">Sin vuelos</td></tr>';
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function lookupICAO(inputId, infoId) {
