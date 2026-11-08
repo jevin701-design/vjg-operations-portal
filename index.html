@@ -739,13 +739,15 @@ async function handleIFCallback(){
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
       document.getElementById('loginBtn').onclick = logout;
       const isVjg = await checkVjgMembership();
-      isMember = true; // Force live access if we have a token
       if (isVjg || isAdmin) {
+        isMember = true;
         showToast('Conectado con Infinite Flight');
+        showView('home');
       } else {
-        showToast('Conectado con Infinite Flight');
+        isMember = false;
+        document.getElementById('notMember').classList.remove('hidden');
+        showToast('Conectado, pero no eres miembro de VJG', true);
       }
-      showView('bitacora');
       // Clean up only on success
       try { localStorage.removeItem('if_code_verifier'); } catch(e) {}
       try { sessionStorage.removeItem('if_code_verifier'); } catch(e) {}
@@ -790,18 +792,8 @@ async function checkVjgMembership() {
       headers: { Authorization: 'Bearer ' + token }
     });
     const data = await res.json();
-    console.log('IF organizations response:', data);
-    if (data.result && Array.isArray(data.result)) {
-      // Exact match
-      if (data.result.some(o => o.id === VJG_ORG_ID)) return true;
-      // Fallback: if user belongs to any org that contains "vista" or "vjg" in name
-      if (data.result.some(o => (o.name || '').toLowerCase().includes('vista') || (o.name || '').toLowerCase().includes('vjg'))) return true;
-      // Temporary: if they have orgs at all and we have the token, allow live load
-      if (data.result.length > 0) return true;
-    }
-  } catch(e) {
-    console.error('Membership check error', e);
-  }
+    if (data.result && data.result.some(o => o.id === VJG_ORG_ID)) return true;
+  } catch(e) {}
   return false;
 }
 
@@ -1169,8 +1161,8 @@ async function loadBitacora() {
 
   ifCard.style.display = 'block';
 
+  const canSeeLive = isAdmin || (ifConnected && isMember);
   const token = localStorage.getItem('if_access_token');
-  const canSeeLive = isAdmin || !!token; // Force live if we have any token
 
   // No live access: load from cache
   if (!canSeeLive || !token) {
@@ -1254,7 +1246,7 @@ async function loadBitacora() {
     const ifFlights = [];
     let activeCount = 0;
 
-    for (const ac of aircraftList.slice(0, 25)) {
+    for (const ac of aircraftList.slice(0, 15)) {
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
       // Get schedules for planned destination
@@ -1266,19 +1258,7 @@ async function loadBitacora() {
         const schData = await safeJson(schRes);
         schedules = schData.result || [];
       } catch(e) {}
-      // Check current position — if flying, force an active entry
-      let isCurrentlyFlying = false;
-      try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        const posData = await safeJson(posRes);
-        if (posData.result && (posData.result.isOnGround === false || posData.result.state === 2 || (posData.result.altitude && posData.result.altitude > 500))) {
-          isCurrentlyFlying = true;
-        }
-      } catch(e) {}
-
-      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=50`, {
+      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=5`, {
         headers: { Authorization: 'Bearer ' + token }
       });
       const flData = await safeJson(flRes);
@@ -1303,34 +1283,11 @@ async function loadBitacora() {
           };
         });
         ifFlights.push(...items);
-        activeCount += items.filter(f => f.status === 0 || !f.actualArrivalUtc).length;
-      }
-
-      // Always add synthetic active if position says flying and none exists yet
-      if (isCurrentlyFlying && !ifFlights.some(f => f.registration === reg && !f.actualArrivalUtc)) {
-        ifFlights.push({
-          registration: reg,
-          avion: db.model || db.manufacturer || '—',
-          usage: db.usage_type || '—',
-          originIcao: ac.lastAirport || ac.homeAirport || '?',
-          destinationIcao: '…',
-          actualDepartureUtc: new Date().toISOString(),
-          actualArrivalUtc: null,
-          status: 0,
-          pilotName: 'En vuelo',
-          id: 'live-' + ac.id
-        });
-        activeCount++;
+        activeCount += items.filter(f => !f.actualArrivalUtc).length;
       }
     }
 
-    // Force active flights (no arrival) to the very top
-    ifFlights.sort((a, b) => {
-      const aActive = !a.actualArrivalUtc ? 1 : 0;
-      const bActive = !b.actualArrivalUtc ? 1 : 0;
-      if (aActive !== bActive) return bActive - aActive;
-      return new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0);
-    });
+    ifFlights.sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
     ifFlightsCache = ifFlights;
     // Persist status display for public fleet view
     const statusByReg = {};
@@ -1389,14 +1346,14 @@ async function loadBitacora() {
         sb.from('bitacora_cache').upsert(rows, { onConflict: 'id' }).then(() => {});
       });
     }
-    ifDebug.textContent = `Aeronaves: ${aircraftList.length} · Vuelos: ${ifFlights.length} · Activos: ${activeCount}`;
+    ifDebug.textContent = `Aeronaves en org: ${aircraftList.length} · Vuelos IF: ${ifFlights.length} · Activos: ${activeCount}`;
 
     if (ifFlights.length) {
       body.innerHTML = ifFlights.map((f) => {
         const reg = f.registration || '—';
         const isSelected = selectedReg && reg.toUpperCase() === selectedReg.toUpperCase();
         return `
-          <tr style="${!f.actualArrivalUtc ? 'background:#14372c; font-weight:700;' : ''}">
+          <tr style="${!f.actualArrivalUtc ? 'background:#14372c' : ''}">
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
