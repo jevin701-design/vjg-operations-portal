@@ -1273,7 +1273,7 @@ async function loadBitacora() {
           headers: { Authorization: 'Bearer ' + token }
         });
         const posData = await safeJson(posRes);
-        if (posData.result && (posData.result.altitude > 100 || posData.result.groundSpeed > 30)) {
+        if (posData.result && (posData.result.isOnGround === false || posData.result.state === 2 || (posData.result.altitude && posData.result.altitude > 500))) {
           isCurrentlyFlying = true;
         }
       } catch(e) {}
