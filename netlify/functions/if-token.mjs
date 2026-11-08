@@ -5,19 +5,31 @@ export default async (req) => {
 
   try {
     const body = await req.json();
-    const { code, code_verifier, redirect_uri } = body;
+    const { code, code_verifier, redirect_uri, refresh_token, grant_type } = body;
 
-    if (!code || !code_verifier) {
-      return new Response(JSON.stringify({ error: 'Missing code or code_verifier' }), { status: 400 });
+    let tokenBody;
+
+    if (grant_type === 'refresh_token' || refresh_token) {
+      if (!refresh_token) {
+        return new Response(JSON.stringify({ error: 'Missing refresh_token' }), { status: 400 });
+      }
+      tokenBody = new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV',
+        refresh_token
+      });
+    } else {
+      if (!code || !code_verifier) {
+        return new Response(JSON.stringify({ error: 'Missing code or code_verifier' }), { status: 400 });
+      }
+      tokenBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV',
+        code,
+        redirect_uri: redirect_uri || 'https://vistajet-group.netlify.app/',
+        code_verifier
+      });
     }
-
-    const tokenBody = new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV',
-      code,
-      redirect_uri: redirect_uri || 'https://vistajet-group.netlify.app/',
-      code_verifier
-    });
 
     const res = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
       method: 'POST',
