@@ -1295,7 +1295,13 @@ async function loadBitacora() {
       }
     }
 
-    ifFlights.sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
+    // Force active flights (no arrival) to the very top
+    ifFlights.sort((a, b) => {
+      const aActive = !a.actualArrivalUtc ? 1 : 0;
+      const bActive = !b.actualArrivalUtc ? 1 : 0;
+      if (aActive !== bActive) return bActive - aActive;
+      return new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0);
+    });
     ifFlightsCache = ifFlights;
     // Persist status display for public fleet view
     const statusByReg = {};
@@ -1361,7 +1367,7 @@ async function loadBitacora() {
         const reg = f.registration || '—';
         const isSelected = selectedReg && reg.toUpperCase() === selectedReg.toUpperCase();
         return `
-          <tr style="${!f.actualArrivalUtc ? 'background:#14372c' : ''}">
+          <tr style="${!f.actualArrivalUtc ? 'background:#14372c; font-weight:700;' : ''}">
             <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
             <td>${f.avion || '—'}</td>
             <td><a class="reg-link ${isSelected ? 'selected' : ''}" onclick="showHistory('${reg}')">${reg}</a></td>
