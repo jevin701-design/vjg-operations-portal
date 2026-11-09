@@ -1347,6 +1347,14 @@ async function loadBitacora() {
     (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
 
     const allFlights = [];
+    let orgSchedules = [];
+    try {
+      const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const schData = await schRes.json();
+      orgSchedules = schData.result || [];
+    } catch(e) {}
 
     for (const ac of aircraftList.slice(0, 25)) {
       const reg = ac.registration || '—';
@@ -1369,8 +1377,10 @@ async function loadBitacora() {
             let origin = f.originIcao || '?';
             let dest = f.destinationIcao || '…';
             if (!dest || dest === '…' || dest.toUpperCase() === origin.toUpperCase()) {
-              const match = schedules.find(s => s.originIcao && s.originIcao.toUpperCase() === origin.toUpperCase() && s.destinationIcao);
+              const match = schedules.find(s => s.originIcao && s.originIcao.toUpperCase() === origin.toUpperCase() && s.destinationIcao)
+                || orgSchedules.find(s => s.aircraftId === ac.id && s.destinationIcao);
               if (match) dest = match.destinationIcao;
+              if (match && match.originIcao && origin === '?') origin = match.originIcao;
             }
             const pilot = (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : '—';
             const sameAirport = origin && dest && origin.toUpperCase() === dest.toUpperCase();
