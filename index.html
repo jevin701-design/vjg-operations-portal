@@ -1641,15 +1641,7 @@ async function loadBitacora() {
   }
 
   try {
-    const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    const orgData = await orgRes.json();
-    if (!orgData.result || !orgData.result.length) throw new Error('Sin organización');
-
-    const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
-
-    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
       headers: { Authorization: 'Bearer ' + token }
     });
     const acData = await acRes.json();
@@ -1660,70 +1652,20 @@ async function loadBitacora() {
     (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
 
     const allFlights = [];
-    const loadedRegs = [];
-    const failedRegs = [];
-    let orgSchedules = [];
-    try {
-      const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      const schData = await schRes.json();
-      orgSchedules = schData.result || [];
-    } catch(e) {}
-
-    // Add current schedules as flights
-    for (const s of orgSchedules) {
-      const ac = aircraftList.find(a => a.id === s.aircraftId);
-      if (!ac) continue;
+    for (const ac of aircraftList) {
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
-      const isActive = s.status === 1 || (!s.actualArrivalUtc && s.actualDepartureUtc);
-      allFlights.push({
-        date: s.actualDepartureUtc || s.scheduledDepartureUtc,
-        avion: db.model || db.manufacturer || '—',
-        registration: reg,
-        origin: s.originIcao || '?',
-        dest: s.destinationIcao || '…',
-        usage: db.usage_type || '—',
-        statusText: isActive ? 'EN VUELO' : 'Programado',
-        pilot: (s.crew && s.crew.length) ? s.crew.map(c => c.username).join(', ') : '—',
-        isActive,
-        flightTimeMinutes: null
-      });
-    }
-
-    for (const ac of aircraftList.slice(0, 50)) {
-      await new Promise(r => setTimeout(r, 100));
-      const reg = ac.registration || '—';
-      const db = dbMap[reg.toUpperCase()] || {};
-      let schedules = [];
       try {
-        const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/schedules`, {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=30`, {
           headers: { Authorization: 'Bearer ' + token }
         });
-        const schData = await schRes.json();
-        schedules = schData.result || [];
-      } catch(e) {}
-      try {
-        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=50`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        if (!flRes.ok) { failedRegs.push(reg + '(' + flRes.status + ')'); continue; }
         const flData = await flRes.json();
-        loadedRegs.push(reg);
         if (flData.result && flData.result.items) {
           for (const f of flData.result.items) {
-            let origin = f.originIcao || '?';
-            let dest = f.destinationIcao || '…';
-            if (!dest || dest === '…' || dest.toUpperCase() === origin.toUpperCase()) {
-              const match = schedules.find(s => s.originIcao && s.originIcao.toUpperCase() === origin.toUpperCase() && s.destinationIcao)
-                || orgSchedules.find(s => s.aircraftId === ac.id && s.destinationIcao);
-              if (match) dest = match.destinationIcao;
-              if (match && match.originIcao && origin === '?') origin = match.originIcao;
-            }
+            const origin = f.originIcao || '?';
+            const dest = f.destinationIcao || '…';
             const pilot = (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : '—';
-            const sameAirport = origin && dest && origin.toUpperCase() === dest.toUpperCase();
-            const isActive = !f.actualArrivalUtc && !sameAirport;
+            const isActive = !f.actualArrivalUtc;
             let statusText = 'Completado';
             if (isActive) {
               statusText = 'EN VUELO';
@@ -1749,152 +1691,23 @@ async function loadBitacora() {
       } catch(e) {}
     }
 
-    allFlights.sort((a, b) => {
-      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
-      return new Date(b.date || 0) - new Date(a.date || 0);
-    });
-
+    allFlights.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     ifFlightsCache = allFlights;
-    ifDebug.textContent = allFlights.length + ' vuelos · ' + loadedRegs.join(', ') + (failedRegs.length ? ' · Falló: ' + failedRegs.join(', ') : '');
+    ifDebug.textContent = allFlights.length + ' vuelos';
     statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
 
-    body.innerHTML = allFlights.slice(0, 100).map(f => `
+    body.innerHTML = allFlights.slice(0, 80).map(f => `
       <tr style="${f.isActive ? 'background:#14372c' : ''}">
         <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
         <td>${f.avion}</td>
         <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration}</a></td>
         <td>${f.origin} → ${f.dest}</td>
         <td>${f.usage}</td>
-        <td>${statusTicker(f.statusText, f.isActive)}</td>
+        <td>${f.statusText === 'EN VUELO' ? '<div class="status-ticker"><span>EN VUELO</span></div>' : f.statusText}</td>
         <td>${f.pilot}</td>
-      </tr>
-    `).join('');
-
-  } catch (e) {
-    statusEl.textContent = 'Error';
-    ifDebug.textContent = e.message;
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Reconectar</button></td></tr>';
-  }
-}
-
-function showHistory(reg) {
-  const card = document.getElementById('historyCard');
-  const title = document.getElementById('historyTitle');
-  const body = document.getElementById('historyBody');
-  title.textContent = 'Historial de ' + reg;
-  const flights = ifFlightsCache.filter(f => f.registration === reg);
-  body.innerHTML = flights.map(f => `
-    <tr>
-      <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
-      <td>${f.origin} → ${f.dest}</td>
-      <td>${statusTicker(f.statusText, f.isActive)}</td>
-      <td>${f.pilot}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="4">Sin vuelos</td></tr>';
-  card.style.display = 'block';
-  card.scrollIntoView({ behavior: 'smooth' });
-}
-
-async function lookupICAO(inputId, infoId) {
-  const code = document.getElementById(inputId).value.trim().toUpperCase();
-  const info = document.getElementById(infoId);
-  if (code.length !== 4) { info.textContent = ''; return; }
-  try {
-    const res = await fetch(`https://airportsapi.com/api/airports/${code}`);
-    const data = await res.json();
-    const attr = data?.data?.attributes;
-    if (attr && attr.name) {
-      const city = attr.municipality || attr.city || '';
-      const country = attr.iso_country || attr.country || '';
-      info.textContent = [attr.name, city, country].filter(Boolean).join(' · ');
-    } else {
-      info.textContent = t('No encontrado', 'Not found');
-    }
+      </tr>`).join('');
   } catch(e) {
-    info.textContent = t('Error de consulta', 'Lookup error');
+    statusEl.textContent = 'Error: ' + e.message;
   }
 }
-
-function loadAircraftSelect() {
-  const sel = document.getElementById('genAircraft');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">—</option>' + fleetCache.map(ac => `<option value="${ac.registration}">${ac.registration} · ${ac.model || ac.manufacturer || ''}</option>`).join('');
-}
-
-function getConfigsForAircraft(reg) {
-  const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
-  const model = (ac?.model || '').toUpperCase();
-  return aircraftConfigs[reg.toUpperCase()] || aircraftConfigs[model] || [];
-}
-
-function loadAircraftConfig() {
-  const reg = document.getElementById('genAircraft').value;
-  const sel = document.getElementById('genConfig');
-  sel.innerHTML = '<option value="">—</option>';
-  if (!reg) return;
-  const configs = getConfigsForAircraft(reg);
-  configs.forEach((c, i) => {
-    sel.innerHTML += `<option value="${i}">${c.name || 'Config ' + (i+1)}</option>`;
-  });
-}
-
-function applyConfig() {
-  const reg = document.getElementById('genAircraft').value;
-  const idx = document.getElementById('genConfig').value;
-  if (!reg || idx === '') return;
-  const configs = getConfigsForAircraft(reg);
-  const c = configs[parseInt(idx)];
-  if (!c) return;
-  if (c.payload) document.getElementById('genPayload').value = c.payload;
-  if (c.fuel) document.getElementById('genFuel').value = c.fuel;
-  showToast(`${c.name}: carga ${c.payload} kg · fuel ${c.fuel} kg`);
-}
-
-function generateFlightNumber() {
-  if (!isMember && !isAdmin) {
-    showToast(t('Únete a VJG para usar el generador', 'Join VJG to use the generator'), true);
-    return;
-  }
-  const type = document.getElementById('genType').value;
-  const range = RANGES[type];
-  if (!range) return;
-  const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-  const origin = document.getElementById('genOrigin').value.trim().toUpperCase();
-  const dest = document.getElementById('genDest').value.trim().toUpperCase();
-  const ac = document.getElementById('genAircraft').value;
-  const payload = document.getElementById('genPayload').value;
-  const fuel = document.getElementById('genFuel').value;
-  document.getElementById('genResult').textContent = `VJT ${num}`;
-  showToast(`VJT ${num} · ${origin || '?'} → ${dest || '?'} · ${ac || ''}`);
-}
-
-function loadHubs() { document.getElementById('hubsContent').innerHTML = '<div class="hub"><strong>MMLO</strong>Hub principal</div>'; }
-function updateGeneratorAccess() {
-  const form = document.getElementById('generatorForm');
-  const notice = document.getElementById('generatorNotice');
-  if (isMember || isAdmin) {
-    form.classList.remove('member-only');
-    notice.classList.add('hidden');
-  } else {
-    form.classList.add('member-only');
-    notice.classList.remove('hidden');
-  }
-}
-
-sb.auth.getSession().then(async ({ data: { session } }) => {
-  if (session) {
-    currentUser = session.user;
-    isAdmin = await checkAdmin();
-    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
-    document.getElementById('loginBtn').onclick = logout;
-  }
-  await restoreIFSession();
-});
-handleIFCallback();
-</script>
-</body>
-</html>
-
-
-
 
