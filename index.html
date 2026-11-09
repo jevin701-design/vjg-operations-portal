@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VistaJet Group</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --bg: #0d0d0d;
@@ -493,24 +491,15 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <div class="eyebrow" data-es="PRUEBA" data-en="TEST">PRUEBA</div>
     <h2 data-es="Agente de Bitácora" data-en="Logbook Agent">Agente de Bitácora</h2>
     <p class="lead" data-es="Consulta directa a la API de Infinite Flight para la organización VJG." data-en="Direct query to Infinite Flight API for the VJG organization.">Consulta directa a la API de Infinite Flight para la organización VJG.</p>
-    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Actualizar</button>
-    <button class="btn" id="syncBtn" onclick="syncFleet()" style="margin-left:8px">Sincronizar flota</button>
+    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Cargar vuelos de VJG</button>
     <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
     <div id="agentResult" style="margin-top:16px;display:none">
       <div id="agentSummary" style="margin-bottom:12px"></div>
       <div id="agentAlerts" style="margin-bottom:12px"></div>
-      <div id="agentMap" style="height:280px;background:#111;border-radius:8px;margin-bottom:12px;position:relative;overflow:hidden"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th><th>Sugerencia VJT</th></tr></thead>
+          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th></tr></thead>
           <tbody id="agentBody"></tbody>
-        </table>
-      </div>
-      <h3 style="margin-top:20px">Horas por piloto</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Piloto</th><th>Horas</th><th>Vuelos</th></tr></thead>
-          <tbody id="pilotHoursBody"></tbody>
         </table>
       </div>
     </div>
@@ -1188,34 +1177,12 @@ function statusTicker(text, isActive) {
   return `<div class="status-ticker ${cls}"><span>${text}</span></div>`;
 }
 
-let agentMap = null;
-let agentMarkers = [];
-
-function formatEta(utcStr) {
-  if (!utcStr) return '—';
-  const d = new Date(utcStr);
-  const utc = d.toISOString().slice(11, 16) + ' UTC';
-  const local = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  return `${utc} / ${local}`;
-}
-
-function suggestVjt(origin) {
-  if (!origin) return '—';
-  const o = origin.toUpperCase();
-  let type = 'carga';
-  if (o.startsWith('K') || o.startsWith('C') || o.startsWith('P')) type = 'privada';
-  if (o.startsWith('L') || o.startsWith('E')) type = 'charter';
-  const range = RANGES[type] || RANGES.carga;
-  const num = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-  return `VJT ${num}`;
-}
-
 async function loadAgent() {
   const statusEl = document.getElementById('agentStatus');
   const resultEl = document.getElementById('agentResult');
   const btn = document.getElementById('agentBtn');
   btn.disabled = true;
-  statusEl.textContent = 'Consultando…';
+  statusEl.textContent = 'Consultando posiciones…';
   resultEl.style.display = 'none';
   const token = localStorage.getItem('if_access_token');
   if (!token) {
@@ -1232,8 +1199,6 @@ async function loadAgent() {
     const aircraft = acData.result || [];
     const rows = [];
     const alerts = [];
-    const pilotHours = {};
-    const mapPoints = [];
     for (const ac of aircraft.slice(0, 12)) {
       let pos = null;
       try {
@@ -1248,7 +1213,6 @@ async function loadAgent() {
       if (onGround) alerts.push(ac.registration || '—');
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
-        mapPoints.push({ lat: pos.latitude, lon: pos.longitude, reg: ac.registration, status });
         try {
           const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
             headers: { 'User-Agent': 'VJG-Portal/1.0' }
@@ -1259,37 +1223,12 @@ async function loadAgent() {
           if (place !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + place;
         } catch(e) {}
       }
-      // Get latest flight for ETA and pilot hours
-      let eta = '—';
-      let origin = null;
-      try {
-        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        const flData = await flRes.json();
-        const items = (flData.result && flData.result.items) || [];
-        if (items.length) {
-          const f = items[0];
-          origin = f.originIcao;
-          if (f.estimatedArrivalUtc || f.actualArrivalUtc) {
-            eta = formatEta(f.estimatedArrivalUtc || f.actualArrivalUtc);
-          }
-          const pilot = (f.crew && f.crew.length) ? f.crew[0].username : null;
-          if (pilot && f.flightTimeMinutes) {
-            if (!pilotHours[pilot]) pilotHours[pilot] = { mins: 0, flights: 0 };
-            pilotHours[pilot].mins += f.flightTimeMinutes;
-            pilotHours[pilot].flights += 1;
-          }
-        }
-      } catch(e) {}
       rows.push({
         registration: ac.registration || '—',
         status,
         place,
         alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
-        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—',
-        eta,
-        vjt: suggestVjt(origin)
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—'
       });
     }
     document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
@@ -1304,60 +1243,13 @@ async function loadAgent() {
         <td>${r.place}</td>
         <td>${r.alt}</td>
         <td>${r.spd}</td>
-        <td>${r.eta}</td>
-        <td>${r.vjt}</td>
       </tr>`).join('');
-    // Pilot hours
-    const pilotRows = Object.entries(pilotHours).map(([name, d]) => {
-      const h = Math.floor(d.mins / 60);
-      const m = Math.round(d.mins % 60);
-      return `<tr><td>${name}</td><td>${h}h ${m}min</td><td>${d.flights}</td></tr>`;
-    }).join('');
-    document.getElementById('pilotHoursBody').innerHTML = pilotRows || '<tr><td colspan="3">Sin datos</td></tr>';
-    // Map
-    if (!agentMap) {
-      agentMap = L.map('agentMap').setView([20, 0], 2);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OSM' }).addTo(agentMap);
-    }
-    agentMarkers.forEach(m => agentMap.removeLayer(m));
-    agentMarkers = [];
-    mapPoints.forEach(p => {
-      const m = L.marker([p.lat, p.lon]).addTo(agentMap).bindPopup(`${p.reg}<br>${p.status}`);
-      agentMarkers.push(m);
-    });
-    if (mapPoints.length) agentMap.fitBounds(mapPoints.map(p => [p.lat, p.lon]), { padding: [20, 20] });
     resultEl.style.display = 'block';
     statusEl.textContent = 'Listo';
   } catch(e) {
     statusEl.textContent = 'Error: ' + e.message;
   }
   btn.disabled = false;
-}
-
-async function syncFleet() {
-  const statusEl = document.getElementById('agentStatus');
-  const token = localStorage.getItem('if_access_token');
-  if (!token || !isAdmin) { statusEl.textContent = 'Solo admin'; return; }
-  statusEl.textContent = 'Sincronizando…';
-  try {
-    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    const acData = await acRes.json();
-    const aircraft = acData.result || [];
-    const { data: existing } = await sb.from('fleet').select('registration');
-    const existingRegs = new Set((existing || []).map(f => (f.registration || '').toUpperCase()));
-    let added = 0;
-    for (const ac of aircraft) {
-      const reg = (ac.registration || '').toUpperCase();
-      if (!reg || existingRegs.has(reg)) continue;
-      await sb.from('fleet').insert({ registration: ac.registration, status: 'available' });
-      added++;
-    }
-    statusEl.textContent = `Sincronizado: ${added} aeronaves nuevas`;
-  } catch(e) {
-    statusEl.textContent = 'Error sync: ' + e.message;
-  }
 }
 
 async function loadBitacora() {
