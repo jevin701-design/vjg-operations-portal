@@ -498,7 +498,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <div id="agentAlerts" style="margin-bottom:12px"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th></tr></thead>
+          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th></tr></thead>
           <tbody id="agentBody"></tbody>
         </table>
       </div>
@@ -1177,6 +1177,14 @@ function statusTicker(text, isActive) {
   return `<div class="status-ticker ${cls}"><span>${text}</span></div>`;
 }
 
+function formatEta(utcStr) {
+  if (!utcStr) return '—';
+  const d = new Date(utcStr);
+  const utc = d.toISOString().slice(11, 16) + ' UTC';
+  const local = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${utc} / ${local}`;
+}
+
 async function loadAgent() {
   const statusEl = document.getElementById('agentStatus');
   const resultEl = document.getElementById('agentResult');
@@ -1223,12 +1231,25 @@ async function loadAgent() {
           if (place !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + place;
         } catch(e) {}
       }
+      let eta = '—';
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        const items = (flData.result && flData.result.items) || [];
+        if (items.length) {
+          const f = items[0];
+          eta = formatEta(f.estimatedArrivalUtc || f.actualArrivalUtc);
+        }
+      } catch(e) {}
       rows.push({
         registration: ac.registration || '—',
         status,
         place,
         alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
-        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—'
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—',
+        eta
       });
     }
     document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
@@ -1243,6 +1264,7 @@ async function loadAgent() {
         <td>${r.place}</td>
         <td>${r.alt}</td>
         <td>${r.spd}</td>
+        <td>${r.eta}</td>
       </tr>`).join('');
     resultEl.style.display = 'block';
     statusEl.textContent = 'Listo';
