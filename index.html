@@ -946,7 +946,8 @@ function formatDuration(mins) {
 }
 
 function statusTicker(f) {
-  const isActive = f.status === 0 || (f.status === undefined && !f.actualArrivalUtc);
+  const same = f.originIcao && f.destinationIcao && f.originIcao.toUpperCase() === f.destinationIcao.toUpperCase();
+  const isActive = (f.status === 0 || (f.status === undefined && !f.actualArrivalUtc)) && !same;
   if (isActive) {
     const eta = f.estimatedArrivalUtc || f.eta;
     let extra = '';
@@ -1327,7 +1328,8 @@ async function loadBitacora() {
             const origin = f.originIcao || '?';
             const dest = f.destinationIcao || '…';
             const pilot = (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : '—';
-            const isActive = !f.actualArrivalUtc;
+            const sameAirport = origin && dest && origin.toUpperCase() === dest.toUpperCase();
+            const isActive = !f.actualArrivalUtc && !sameAirport;
             let statusText = 'Completado';
             if (isActive) {
               statusText = 'EN VUELO';
