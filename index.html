@@ -1193,8 +1193,7 @@ async function loadAgent() {
   const resultEl = document.getElementById('agentResult');
   const btn = document.getElementById('agentBtn');
   btn.disabled = true;
-  statusEl.textContent = 'Consultando posiciones…';
-  resultEl.style.display = 'none';
+  if (!document.getElementById('agentBody').innerHTML) statusEl.textContent = 'Consultando…';
   const token = localStorage.getItem('if_access_token');
   if (!token) {
     statusEl.textContent = 'Conecta con Infinite Flight primero';
@@ -1205,6 +1204,27 @@ async function loadAgent() {
     const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
       headers: { Authorization: 'Bearer ' + token }
     });
+    if (acRes.status === 401) {
+      const refresh = localStorage.getItem('if_refresh_token');
+      if (refresh) {
+        try {
+          const r = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV' })
+          });
+          const d = await r.json();
+          if (d.access_token) {
+            localStorage.setItem('if_access_token', d.access_token);
+            if (d.refresh_token) localStorage.setItem('if_refresh_token', d.refresh_token);
+            statusEl.textContent = 'Sesión renovada. Actualiza.';
+            btn.disabled = false;
+            return;
+          }
+        } catch(e) {}
+      }
+      throw new Error('Sesión expirada. Reconecta con IF.');
+    }
     if (acRes.status === 429) throw new Error('Demasiadas consultas. Espera un momento.');
     if (!acRes.ok) throw new Error('Error de conexión (' + acRes.status + ')');
     const acData = await acRes.json();
@@ -1221,8 +1241,17 @@ async function loadAgent() {
         const posData = await posRes.json();
         pos = posData.result || null;
       } catch(e) {}
-      const onGround = pos && (pos.altitude < 500 || pos.speed < 30);
-      const status = pos ? (onGround ? 'En tierra' : 'En vuelo') : 'Sin datos';
+      const alt = pos?.altitude || 0;
+      const spd = pos?.speed || 0;
+      const vs = pos?.verticalSpeed || 0;
+      const onGround = pos && (alt < 500 || spd < 30);
+      let status = 'Sin datos';
+      if (pos) {
+        if (onGround) status = 'En tierra';
+        else if (alt < 10000 && vs > 200) status = 'Despegando';
+        else if (alt < 10000 && vs < -200) status = 'Aterrizando';
+        else status = 'En vuelo';
+      }
       if (onGround) alerts.push(ac.registration || '—');
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
