@@ -1358,8 +1358,29 @@ async function loadBitacora() {
       orgSchedules = schData.result || [];
     } catch(e) {}
 
+    // Add current schedules as flights
+    for (const s of orgSchedules) {
+      const ac = aircraftList.find(a => a.id === s.aircraftId);
+      if (!ac) continue;
+      const reg = ac.registration || '—';
+      const db = dbMap[reg.toUpperCase()] || {};
+      const isActive = s.status === 1 || (!s.actualArrivalUtc && s.actualDepartureUtc);
+      allFlights.push({
+        date: s.actualDepartureUtc || s.scheduledDepartureUtc,
+        avion: db.model || db.manufacturer || '—',
+        registration: reg,
+        origin: s.originIcao || '?',
+        dest: s.destinationIcao || '…',
+        usage: db.usage_type || '—',
+        statusText: isActive ? 'EN VUELO' : 'Programado',
+        pilot: (s.crew && s.crew.length) ? s.crew.map(c => c.username).join(', ') : '—',
+        isActive,
+        flightTimeMinutes: null
+      });
+    }
+
     for (const ac of aircraftList.slice(0, 50)) {
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 100));
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
       let schedules = [];
