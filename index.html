@@ -1356,14 +1356,8 @@ async function loadBitacora() {
       orgSchedules = schData.result || [];
     } catch(e) {}
 
-    // Prioritize 777F
-    const sorted = [...aircraftList].sort((a, b) => {
-      const aIs777 = (a.registration || '').toUpperCase().includes('FVZV');
-      const bIs777 = (b.registration || '').toUpperCase().includes('FVZV');
-      return aIs777 ? -1 : bIs777 ? 1 : 0;
-    });
-    for (const ac of sorted.slice(0, 50)) {
-      await new Promise(r => setTimeout(r, 200));
+    for (const ac of aircraftList.slice(0, 50)) {
+      await new Promise(r => setTimeout(r, 150));
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
       let schedules = [];
