@@ -1356,7 +1356,7 @@ async function loadBitacora() {
       orgSchedules = schData.result || [];
     } catch(e) {}
 
-    for (const ac of aircraftList.slice(0, 25)) {
+    for (const ac of aircraftList.slice(0, 50)) {
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
       let schedules = [];
@@ -1368,7 +1368,7 @@ async function loadBitacora() {
         schedules = schData.result || [];
       } catch(e) {}
       try {
-        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=20`, {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=50`, {
           headers: { Authorization: 'Bearer ' + token }
         });
         const flData = await flRes.json();
@@ -1419,7 +1419,7 @@ async function loadBitacora() {
     ifDebug.textContent = allFlights.length + ' vuelos';
     statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
 
-    body.innerHTML = allFlights.slice(0, 40).map(f => `
+    body.innerHTML = allFlights.slice(0, 100).map(f => `
       <tr style="${f.isActive ? 'background:#14372c' : ''}">
         <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
         <td>${f.avion}</td>
