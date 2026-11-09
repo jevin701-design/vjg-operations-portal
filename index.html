@@ -495,9 +495,10 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
     <div id="agentResult" style="margin-top:16px;display:none">
       <div id="agentSummary" style="margin-bottom:12px"></div>
+      <div id="agentAlerts" style="margin-bottom:12px"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Matrícula</th><th>Ruta</th><th>Estado</th><th>Piloto</th><th>Tiempo</th></tr></thead>
+          <thead><tr><th>Matrícula</th><th>Estado</th><th>Posición</th><th>Altitud</th><th>Velocidad</th><th>Último vuelo</th></tr></thead>
           <tbody id="agentBody"></tbody>
         </table>
       </div>
@@ -1176,7 +1177,7 @@ async function loadAgent() {
   const resultEl = document.getElementById('agentResult');
   const btn = document.getElementById('agentBtn');
   btn.disabled = true;
-  statusEl.textContent = 'Consultando…';
+  statusEl.textContent = 'Consultando posiciones…';
   resultEl.style.display = 'none';
   const token = localStorage.getItem('if_access_token');
   if (!token) {
@@ -1191,38 +1192,43 @@ async function loadAgent() {
     if (!acRes.ok) throw new Error('Token inválido (' + acRes.status + ')');
     const acData = await acRes.json();
     const aircraft = acData.result || [];
-    const allFlights = [];
-    for (const ac of aircraft.slice(0, 10)) {
-      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=3`, {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      const flData = await flRes.json();
-      const items = (flData.result && flData.result.items) || [];
-      items.forEach(f => {
-        allFlights.push({
-          ...f,
-          registration: ac.registration || '—',
-          pilot: (f.crew && f.crew.length) ? f.crew.map(c => c.username).join(', ') : '—'
+    const rows = [];
+    const alerts = [];
+    for (const ac of aircraft.slice(0, 12)) {
+      let pos = null;
+      try {
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
+          headers: { Authorization: 'Bearer ' + token }
         });
+        const posData = await posRes.json();
+        pos = posData.result || null;
+      } catch(e) {}
+      const onGround = pos && (pos.altitude < 500 || pos.speed < 30);
+      const status = pos ? (onGround ? 'En tierra' : 'En vuelo') : 'Sin datos';
+      if (onGround) alerts.push(ac.registration || '—');
+      rows.push({
+        registration: ac.registration || '—',
+        status,
+        lat: pos?.latitude?.toFixed(2) || '—',
+        lon: pos?.longitude?.toFixed(2) || '—',
+        alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—'
       });
     }
-    allFlights.sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
-    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves · ${allFlights.length} vuelos`;
-    document.getElementById('agentBody').innerHTML = allFlights.map(f => {
-      const active = !f.actualArrivalUtc;
-      const status = active ? '<span class="status-ticker"><span>EN VUELO</span></span>' : 'Completado';
-      const date = f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—';
-      const route = `${f.originIcao || '?'} → ${f.destinationIcao || '?'}`;
-      const time = f.flightTimeMinutes ? `${Math.floor(f.flightTimeMinutes/60)}h ${Math.round(f.flightTimeMinutes%60)}min` : '—';
-      return `<tr>
-        <td>${date}</td>
-        <td><a class="reg-link">${f.registration}</a></td>
-        <td>${route}</td>
-        <td>${status}</td>
-        <td>${f.pilot}</td>
-        <td>${time}</td>
-      </tr>`;
-    }).join('');
+    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
+    const alertEl = document.getElementById('agentAlerts');
+    alertEl.innerHTML = alerts.length
+      ? `<div style="background:#2a1a1a;border:1px solid var(--red);padding:10px;border-radius:8px;font-size:13px">En tierra: ${alerts.join(', ')}</div>`
+      : '';
+    document.getElementById('agentBody').innerHTML = rows.map(r => `
+      <tr>
+        <td><a class="reg-link">${r.registration}</a></td>
+        <td>${r.status === 'En vuelo' ? '<span class="status-ticker"><span>EN VUELO</span></span>' : r.status}</td>
+        <td>${r.lat}, ${r.lon}</td>
+        <td>${r.alt}</td>
+        <td>${r.spd}</td>
+        <td>—</td>
+      </tr>`).join('');
     resultEl.style.display = 'block';
     statusEl.textContent = 'Listo';
   } catch(e) {
