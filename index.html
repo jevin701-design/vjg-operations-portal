@@ -627,6 +627,7 @@ let isMember = false;
 let isAdmin = false;
 let ifConnected = false;
 let ifFlightsCache = [];
+let agentTimer = null;
 let selectedReg = null;
 let fleetCache = [];
 let aircraftStatusMap = {};
@@ -675,7 +676,11 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   if (name === 'bitacora') loadBitacora();
-  if (name === 'agent') loadAgent();
+  if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
+  if (name === 'agent') {
+    loadAgent();
+    agentTimer = setInterval(loadAgent, 25000);
+  }
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const link = document.querySelector(`nav a[data-view="${name}"]`);
   if (link) link.classList.add('active');
