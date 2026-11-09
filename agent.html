@@ -74,12 +74,30 @@ async function load() {
   document.getElementById('result').style.display = 'none';
 
   let token = document.getElementById('token').value.trim();
-  if (!token) {
-    // Try localStorage from the portal
-    token = localStorage.getItem('if_access_token') || '';
+  if (!token) token = localStorage.getItem('if_access_token') || '';
+  // Try refresh if we have a refresh token
+  const refresh = localStorage.getItem('if_refresh_token');
+  if (refresh) {
+    try {
+      const r = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: refresh,
+          client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV'
+        })
+      });
+      const data = await r.json();
+      if (data.access_token) {
+        token = data.access_token;
+        localStorage.setItem('if_access_token', token);
+        if (data.refresh_token) localStorage.setItem('if_refresh_token', data.refresh_token);
+      }
+    } catch(e) {}
   }
   if (!token) {
-    setStatus('Pega un token de IF o inicia sesión en el portal primero', true);
+    setStatus('Sin token. Inicia sesión en el portal primero.', true);
     btn.disabled = false;
     return;
   }
