@@ -6,6 +6,8 @@
 <title>VistaJet Group</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 :root {
   --bg: #0d0d0d;
   --panel: #1a1a1a;
@@ -1203,12 +1205,14 @@ async function loadAgent() {
     const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
       headers: { Authorization: 'Bearer ' + token }
     });
-    if (!acRes.ok) throw new Error('Token inválido (' + acRes.status + ')');
+    if (acRes.status === 429) throw new Error('Demasiadas consultas. Espera un momento.');
+    if (!acRes.ok) throw new Error('Error de conexión (' + acRes.status + ')');
     const acData = await acRes.json();
     const aircraft = acData.result || [];
     const rows = [];
     const alerts = [];
-    for (const ac of aircraft.slice(0, 12)) {
+    for (const ac of aircraft.slice(0, 8)) {
+      await new Promise(r => setTimeout(r, 300));
       let pos = null;
       try {
         const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
