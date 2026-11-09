@@ -205,7 +205,6 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <a onclick="showView('apply')" data-view="apply" data-es="Únete" data-en="Apply">Únete</a>
     <a onclick="showView('generator')" data-view="generator" data-es="Generador" data-en="Generator">Generador</a>
     <a onclick="showView('bitacora')" data-view="bitacora" data-es="Bitácora" data-en="Logbook">Bitácora</a>
-    <a onclick="showView('agent')" data-view="agent" data-es="Agente" data-en="Agent">Agente</a>
     
     <a id="adminNav" onclick="showView('admin')" data-view="admin" data-es="Panel" data-en="Panel" style="display:none">Panel</a>
   </nav>
@@ -406,7 +405,26 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
             </table>
           </div>
         </div>
+      <section class="section" style="margin-top:24px">
+
+    <div class="eyebrow" data-es="PRUEBA" data-en="TEST">PRUEBA</div>
+    <h2 data-es="Agente de Bitácora" data-en="Logbook Agent">Agente de Bitácora</h2>
+    <p class="lead" data-es="Consulta directa a la API de Infinite Flight para la organización VJG." data-en="Direct query to Infinite Flight API for the VJG organization.">Consulta directa a la API de Infinite Flight para la organización VJG.</p>
+    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Cargar vuelos de VJG</button>
+    <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
+    <div id="agentResult" style="margin-top:16px;display:none">
+      <div id="agentSummary" style="margin-bottom:12px"></div>
+      <div id="agentAlerts" style="margin-bottom:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th></tr></thead>
+          <tbody id="agentBody"></tbody>
+        </table>
       </div>
+    </div>
+  
+  </section>
+  </div>
     </section>
   </div>
 
@@ -485,24 +503,6 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
         </div>
       </div>
     </section>
-  </div>
-
-  <div id="view-agent" class="view">
-    <div class="eyebrow" data-es="PRUEBA" data-en="TEST">PRUEBA</div>
-    <h2 data-es="Agente de Bitácora" data-en="Logbook Agent">Agente de Bitácora</h2>
-    <p class="lead" data-es="Consulta directa a la API de Infinite Flight para la organización VJG." data-en="Direct query to Infinite Flight API for the VJG organization.">Consulta directa a la API de Infinite Flight para la organización VJG.</p>
-    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Cargar vuelos de VJG</button>
-    <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
-    <div id="agentResult" style="margin-top:16px;display:none">
-      <div id="agentSummary" style="margin-bottom:12px"></div>
-      <div id="agentAlerts" style="margin-bottom:12px"></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th></tr></thead>
-          <tbody id="agentBody"></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div id="view-bitacora" class="view">
@@ -677,7 +677,7 @@ function showView(name) {
   document.getElementById('view-' + name).classList.add('active');
   if (name === 'bitacora') loadBitacora();
   if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
-  if (name === 'agent') {
+  if (name === 'fleet') {
     loadAgent();
     agentTimer = setInterval(loadAgent, 25000);
   }
