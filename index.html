@@ -978,17 +978,20 @@ function showHistory(reg) {
 
   const flights = ifFlightsCache
     .filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase())
-    .sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
+    .sort((a, b) => new Date(b.date || b.actualDepartureUtc || 0) - new Date(a.date || a.actualDepartureUtc || 0));
 
   document.getElementById('historyBody').innerHTML = flights.length
     ? flights.map(f => {
-        const isActive = f.status === 0 || (f.status === undefined && !f.actualArrivalUtc);
+        const isActive = f.isActive || (f.status === 0);
         const statusText = isActive ? t('En vuelo', 'In flight') : t('Completado', 'Completed');
         const statusClass = isActive ? 'active' : 'closed';
+        const origin = f.origin || f.originIcao || '?';
+        const dest = f.dest || f.destinationIcao || '…';
+        const date = f.date || f.actualDepartureUtc;
         return `
           <tr>
-            <td>${f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—'}</td>
-            <td>${f.originIcao || '?'} → ${f.destinationIcao || '…'}</td>
+            <td>${date ? new Date(date).toLocaleDateString() : '—'}</td>
+            <td>${origin} → ${dest}</td>
             <td>${info.usage}</td>
             <td><span class="pill ${statusClass}">${statusText}</span></td>
             <td>${info.mtow}</td>
