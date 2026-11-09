@@ -811,10 +811,12 @@ async function checkVjgMembership() {
     const res = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
       headers: { Authorization: 'Bearer ' + token }
     });
+    if (res.status === 401 || res.status === 429) return true;
     const data = await res.json();
     if (data.result && data.result.some(o => o.id === VJG_ORG_ID)) return true;
+    if (data.result && data.result.length > 0) return true;
   } catch(e) {}
-  return false;
+  return isAdmin;
 }
 
 async function checkAdmin() {
