@@ -1232,21 +1232,21 @@ async function loadAgent() {
         } catch(e) {}
       }
       let eta = '—';
-      if (!onGround) {
-        try {
-          const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
-            headers: { Authorization: 'Bearer ' + token }
-          });
-          const flData = await flRes.json();
-          const items = (flData.result && flData.result.items) || [];
-          if (items.length) {
-            const f = items[0];
-            if (!f.actualArrivalUtc && (f.estimatedArrivalUtc || f.eta)) {
-              eta = formatEta(f.estimatedArrivalUtc || f.eta);
-            }
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        const items = (flData.result && flData.result.items) || [];
+        if (items.length) {
+          const f = items[0];
+          if (onGround && f.actualArrivalUtc) {
+            eta = 'Aterrizó ' + formatEta(f.actualArrivalUtc);
+          } else if (!onGround && (f.estimatedArrivalUtc || f.eta)) {
+            eta = 'ETA ' + formatEta(f.estimatedArrivalUtc || f.eta);
           }
-        } catch(e) {}
-      }
+        }
+      } catch(e) {}
       rows.push({
         registration: ac.registration || '—',
         status,
