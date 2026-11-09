@@ -205,6 +205,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <a onclick="showView('apply')" data-view="apply" data-es="Únete" data-en="Apply">Únete</a>
     <a onclick="showView('generator')" data-view="generator" data-es="Generador" data-en="Generator">Generador</a>
     <a onclick="showView('bitacora')" data-view="bitacora" data-es="Bitácora" data-en="Logbook">Bitácora</a>
+    <a onclick="showView('agent')" data-view="agent" data-es="Agente" data-en="Agent">Agente</a>
     
     <a id="adminNav" onclick="showView('admin')" data-view="admin" data-es="Panel" data-en="Panel" style="display:none">Panel</a>
   </nav>
@@ -486,6 +487,23 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     </section>
   </div>
 
+  <div id="view-agent" class="view">
+    <div class="eyebrow" data-es="PRUEBA" data-en="TEST">PRUEBA</div>
+    <h2 data-es="Agente de Bitácora" data-en="Logbook Agent">Agente de Bitácora</h2>
+    <p class="lead" data-es="Consulta directa a la API de Infinite Flight para la organización VJG." data-en="Direct query to Infinite Flight API for the VJG organization.">Consulta directa a la API de Infinite Flight para la organización VJG.</p>
+    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Cargar vuelos de VJG</button>
+    <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
+    <div id="agentResult" style="margin-top:16px;display:none">
+      <div id="agentSummary" style="margin-bottom:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Matrícula</th><th>Ruta</th><th>Estado</th><th>Piloto</th><th>Tiempo</th></tr></thead>
+          <tbody id="agentBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="view-bitacora" class="view">
     <section class="section">
       <div class="eyebrow">BITÁCORA</div>
@@ -656,6 +674,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   if (name === 'bitacora') loadBitacora();
+  if (name === 'agent') loadAgent();
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const link = document.querySelector(`nav a[data-view="${name}"]`);
   if (link) link.classList.add('active');
@@ -1150,6 +1169,66 @@ async function loadFleet() {
 function statusTicker(text, isActive) {
   const cls = isActive ? '' : 'completed';
   return `<div class="status-ticker ${cls}"><span>${text}</span></div>`;
+}
+
+async function loadAgent() {
+  const statusEl = document.getElementById('agentStatus');
+  const resultEl = document.getElementById('agentResult');
+  const btn = document.getElementById('agentBtn');
+  btn.disabled = true;
+  statusEl.textContent = 'Consultando…';
+  resultEl.style.display = 'none';
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight primero';
+    btn.disabled = false;
+    return;
+  }
+  try {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!acRes.ok) throw new Error('Token inválido (' + acRes.status + ')');
+    const acData = await acRes.json();
+    const aircraft = acData.result || [];
+    const allFlights = [];
+    for (const ac of aircraft.slice(0, 10)) {
+      const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=3`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const flData = await flRes.json();
+      const items = (flData.result && flData.result.items) || [];
+      items.forEach(f => {
+        allFlights.push({
+          ...f,
+          registration: ac.registration || '—',
+          pilot: (f.crew && f.crew.length) ? f.crew.map(c => c.username).join(', ') : '—'
+        });
+      });
+    }
+    allFlights.sort((a, b) => new Date(b.actualDepartureUtc || 0) - new Date(a.actualDepartureUtc || 0));
+    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves · ${allFlights.length} vuelos`;
+    document.getElementById('agentBody').innerHTML = allFlights.map(f => {
+      const active = !f.actualArrivalUtc;
+      const status = active ? '<span class="status-ticker"><span>EN VUELO</span></span>' : 'Completado';
+      const date = f.actualDepartureUtc ? new Date(f.actualDepartureUtc).toLocaleDateString() : '—';
+      const route = `${f.originIcao || '?'} → ${f.destinationIcao || '?'}`;
+      const time = f.flightTimeMinutes ? `${Math.floor(f.flightTimeMinutes/60)}h ${Math.round(f.flightTimeMinutes%60)}min` : '—';
+      return `<tr>
+        <td>${date}</td>
+        <td><a class="reg-link">${f.registration}</a></td>
+        <td>${route}</td>
+        <td>${status}</td>
+        <td>${f.pilot}</td>
+        <td>${time}</td>
+      </tr>`;
+    }).join('');
+    resultEl.style.display = 'block';
+    statusEl.textContent = 'Listo';
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
 }
 
 async function loadBitacora() {
