@@ -1347,6 +1347,8 @@ async function loadBitacora() {
     (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
 
     const allFlights = [];
+    const loadedRegs = [];
+    const failedRegs = [];
     let orgSchedules = [];
     try {
       const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
@@ -1372,7 +1374,9 @@ async function loadBitacora() {
         const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=50`, {
           headers: { Authorization: 'Bearer ' + token }
         });
+        if (!flRes.ok) { failedRegs.push(reg + '(' + flRes.status + ')'); continue; }
         const flData = await flRes.json();
+        loadedRegs.push(reg);
         if (flData.result && flData.result.items) {
           for (const f of flData.result.items) {
             let origin = f.originIcao || '?';
@@ -1417,7 +1421,7 @@ async function loadBitacora() {
     });
 
     ifFlightsCache = allFlights;
-    ifDebug.textContent = allFlights.length + ' vuelos';
+    ifDebug.textContent = allFlights.length + ' vuelos · ' + loadedRegs.join(', ') + (failedRegs.length ? ' · Falló: ' + failedRegs.join(', ') : '');
     statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
 
     body.innerHTML = allFlights.slice(0, 100).map(f => `
