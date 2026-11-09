@@ -1711,3 +1711,16 @@ async function loadBitacora() {
   }
 }
 
+sb.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    currentUser = session.user;
+    isAdmin = await checkAdmin();
+    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+    document.getElementById('loginBtn').onclick = logout;
+  }
+  await restoreIFSession();
+});
+handleIFCallback();
+</script>
+</body>
+</html>
