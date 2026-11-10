@@ -1230,6 +1230,18 @@ async function loadAgent() {
         const posData = await posRes.json();
         pos = posData.result || null;
       } catch(e) {}
+      // Estimate position if stale and airborne
+      if (pos && pos.updatedAt && !pos.isOnGround && pos.speed > 50) {
+        const ageMs = Date.now() - new Date(pos.updatedAt).getTime();
+        if (ageMs > 60000) {
+          const hours = ageMs / 3600000;
+          const distNm = pos.speed * hours;
+          const distDeg = distNm / 60;
+          const hdgRad = (pos.heading || 0) * Math.PI / 180;
+          pos.latitude += distDeg * Math.cos(hdgRad);
+          pos.longitude += distDeg * Math.sin(hdgRad) / Math.cos(pos.latitude * Math.PI / 180);
+        }
+      }
       const alt = pos?.altitude || 0;
       const spd = pos?.speed || 0;
       const vs = pos?.verticalSpeed || 0;
