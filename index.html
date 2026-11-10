@@ -1352,11 +1352,18 @@ async function loadBitacora() {
   }
 
   try {
-    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+    let acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
       headers: { Authorization: 'Bearer ' + token }
     });
+    if (acRes.status === 429) {
+      statusEl.textContent = 'Esperando…';
+      await new Promise(r => setTimeout(r, 5000));
+      acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+    }
     if (!acRes.ok) {
-      statusEl.textContent = 'Error API: ' + acRes.status;
+      statusEl.textContent = 'Error API: ' + acRes.status + '. Espera un momento.';
       return;
     }
     const acData = await acRes.json();
@@ -1372,6 +1379,7 @@ async function loadBitacora() {
 
     const allFlights = [];
     for (const ac of aircraftList) {
+      await new Promise(r => setTimeout(r, 400));
       const reg = ac.registration || '—';
       const db = dbMap[reg.toUpperCase()] || {};
       try {
