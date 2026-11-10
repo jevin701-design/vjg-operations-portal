@@ -681,7 +681,7 @@ function showView(name) {
   if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
   if (name === 'fleet') {
     loadAgent();
-    agentTimer = setInterval(loadAgent, 10000);
+    agentTimer = setInterval(loadAgent, 5000);
   }
   window.addEventListener('resize', () => {
     if (document.getElementById('view-fleet')?.classList.contains('active')) loadAgent();
@@ -1224,8 +1224,8 @@ async function loadAgent() {
     for (const ac of aircraft.slice(0, 6)) {
       let pos = null;
       try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?_=${Date.now()}`, {
-          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?nocache=${Date.now()}`, {
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
