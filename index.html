@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VistaJet Group</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
@@ -194,9 +192,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
   .responsive-img { max-height: 480px; object-fit: cover; }
 }
 </style>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</head>
+    </head>
 <body>
 <div class="left-bar"></div>
 
@@ -439,9 +435,23 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <section class="section">
       <div class="eyebrow" data-es="RUTAS" data-en="ROUTES">RUTAS</div>
       <h2 data-es="Rutas" data-en="Routes">Rutas</h2>
-      <p class="lead" data-es="VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora." data-en="VistaJet Group operates a flexible point-to-point model. This map shows routes flown according to flights registered in the logbook.">VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora.</p>
-      <div id="routesMap" style="height:55vh;min-height:280px;max-height:520px;width:100%;border-radius:12px;margin-top:16px;background:#111"></div>
-      <p id="routesStatus" style="color:var(--muted);font-size:14px;margin-top:12px">Cargando rutas...</p>
+      <p class="lead" data-es="Rutas voladas por VistaJet Group según la organización en Infinite Flight." data-en="Routes flown by VistaJet Group according to the Infinite Flight organization.">Rutas voladas por VistaJet Group según la organización en Infinite Flight.</p>
+      <div style="overflow-x:auto;margin-top:16px">
+        <table>
+          <thead>
+            <tr>
+              <th data-es="Vuelo" data-en="Flight">Vuelo</th>
+              <th data-es="Origen" data-en="Origin">Origen</th>
+              <th data-es="Destino" data-en="Destination">Destino</th>
+              <th data-es="Aeronave" data-en="Aircraft">Aeronave</th>
+            </tr>
+          </thead>
+          <tbody id="routesTableBody">
+            <tr><td colspan="4" style="text-align:center;color:var(--muted)">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="routesStatus" style="color:var(--muted);font-size:14px;margin-top:12px"></p>
     </section>
   </div>
 
@@ -679,6 +689,51 @@ function toggleLang() {
   document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
   if (selectedReg) showHistory(selectedReg);
   renderFleet();
+}
+
+
+async function loadRoutesTable() {
+  const body = document.getElementById('routesTableBody');
+  const statusEl = document.getElementById('routesStatus');
+  if (!body) return;
+
+  body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Cargando...</td></tr>';
+  statusEl.textContent = '';
+
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center">Inicia sesión con Infinite Flight para ver las rutas.</td></tr>';
+    return;
+  }
+
+  try {
+    const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!schRes.ok) throw new Error('HTTP ' + schRes.status);
+    const schData = await schRes.json();
+    const schedules = schData.result || [];
+
+    const routes = schedules.filter(s => s.originIcao && s.destinationIcao && s.originIcao !== s.destinationIcao);
+
+    if (routes.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align:center">No hay rutas disponibles.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = routes.map(s => `
+      <tr>
+        <td>${s.flightNumber || 'VJT'}</td>
+        <td>${s.originIcao}</td>
+        <td>${s.destinationIcao}</td>
+        <td>${s.aircraftId ? '—' : '—'}</td>
+      </tr>
+    `).join('');
+
+    statusEl.textContent = routes.length + ' rutas';
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ef4444">Error al cargar rutas.</td></tr>';
+  }
 }
 
 function showView(name) {
@@ -1743,112 +1798,6 @@ sb.auth.getSession().then(async ({ data: { session } }) => {
 handleIFCallback();
 
 // ===== RUTAS MAP (mejorado) =====
-let routesMap = null;
-const airportCache = {};
-
-async function getAirportCoords(icao) {
-  if (!icao) return null;
-  const code = icao.toUpperCase();
-  if (airportCache[code]) return airportCache[code];
-
-  // Fallback static for common ones
-  const staticCoords = {
-    'MMLO': [21.266, -101.686], 'MMMX': [19.436, -99.072],
-    'KLAX': [33.942, -118.408], 'EGLL': [51.470, -0.454],
-    'WSSS': [1.364, 103.991], 'VHHH': [22.308, 113.918],
-    'YSSY': [-33.946, 151.177], 'KJFK': [40.640, -73.779],
-    'LFPG': [49.009, 2.548], 'EDDF': [50.037, 8.562]
-  };
-  if (staticCoords[code]) {
-    airportCache[code] = staticCoords[code];
-    return staticCoords[code];
-  }
-
-  // Try public API (OurAirports via a simple proxy or direct)
-  try {
-    const res = await fetch(`https://api.ourairports.com/v1/airports?icao=${code}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.latitude_deg && data.longitude_deg) {
-        const coords = [parseFloat(data.latitude_deg), parseFloat(data.longitude_deg)];
-        airportCache[code] = coords;
-        return coords;
-      }
-    }
-  } catch(e) {}
-
-  return null;
-}
-
-async function loadRoutesMap() {
-  const statusEl = document.getElementById('routesStatus');
-  const mapEl = document.getElementById('routesMap');
-  if (!mapEl) return;
-
-  if (!routesMap) {
-    routesMap = L.map('routesMap', { dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false }).setView([20, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
-      maxZoom: 19
-    }).addTo(routesMap);
-  }
-
-  routesMap.eachLayer(layer => {
-    if (layer instanceof L.Polyline) routesMap.removeLayer(layer);
-  });
-
-  statusEl.textContent = '';
-
-  const token = localStorage.getItem('if_access_token');
-  let routes = [];
-
-  if (token) {
-    try {
-      const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
-        headers: { Authorization: 'Bearer ' + token }
-      });
-      if (schRes.ok) {
-        const schData = await schRes.json();
-        const schedules = schData.result || [];
-        routes = schedules
-          .filter(s => s.originIcao && s.destinationIcao && s.originIcao !== s.destinationIcao)
-          .map(s => ({
-            origin: s.originIcao,
-            destination: s.destinationIcao,
-            flight_number: s.flightNumber || 'VJT'
-          }));
-      }
-    } catch (e) {
-      console.warn('IF error', e);
-    }
-  }
-
-  if (routes.length === 0) {
-    statusEl.textContent = token ? '' : '';
-    return;
-  }
-
-  let drawn = 0;
-  for (const r of routes) {
-    try {
-      const orig = await getAirportCoords(r.origin);
-      const dest = await getAirportCoords(r.destination);
-      if (orig && dest) {
-        L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.8 })
-          .bindPopup(`<b>${r.flight_number}</b><br>${r.origin} → ${r.destination}`)
-          .addTo(routesMap);
-        drawn++;
-      }
-    } catch (e) {}
-  }
-
-  statusEl.textContent = drawn > 0 ? drawn + ' rutas' : '';
-}
-// Hook into showView
-const _originalShowView = showView;
-showView = function(name) {
-  _originalShowView(name);
-  if (name === 'routes') setTimeout(loadRoutesMap, 150);
 };
 
 </script>
