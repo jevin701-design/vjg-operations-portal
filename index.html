@@ -1355,8 +1355,16 @@ async function loadBitacora() {
     const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
       headers: { Authorization: 'Bearer ' + token }
     });
+    if (!acRes.ok) {
+      statusEl.textContent = 'Error API: ' + acRes.status;
+      return;
+    }
     const acData = await acRes.json();
     const aircraftList = acData.result || [];
+    if (!aircraftList.length) {
+      statusEl.textContent = 'Sin aeronaves en la organización';
+      return;
+    }
 
     const { data: dbFleet } = await sb.from('fleet').select('*');
     const dbMap = {};
@@ -1404,7 +1412,7 @@ async function loadBitacora() {
 
     allFlights.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     ifFlightsCache = allFlights;
-    ifDebug.textContent = allFlights.length + ' vuelos';
+    ifDebug.textContent = allFlights.length + ' vuelos de ' + aircraftList.length + ' aeronaves';
     statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
 
     body.innerHTML = allFlights.slice(0, 80).map(f => `
