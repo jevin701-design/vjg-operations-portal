@@ -1233,65 +1233,22 @@ async function loadAgent() {
       return;
     }
     if (!acRes.ok) return;
-  try {
-    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft?_=${Date.now()}`, {
-      headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
-    });
-    if (!acRes.ok) return;
     const acData = await acRes.json();
     const aircraft = acData.result || [];
     const rows = [];
     for (const ac of aircraft.slice(0, 6)) {
       let pos = null;
       try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?nocache=${Date.now()}`, {
-          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?_=${Date.now()}`, {
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
       } catch(e) {}
-      // Estimate position along flight plan if stale
-      if (pos && pos.updatedAt && !pos.isOnGround && pos.speed > 50) {
-        const ageMs = Date.now() - new Date(pos.updatedAt).getTime();
-        if (ageMs > 60000) {
-          try {
-            const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/schedules`, {
-              headers: { Authorization: 'Bearer ' + token }
-            });
-            const schData = await schRes.json();
-            const sch = (schData.result || []).find(s => s.flightPlan);
-            if (sch && sch.flightPlan) {
-              const wps = sch.flightPlan.split(/\s+/).filter(w => w.length >= 3);
-              if (wps.length >= 2) {
-                const hours = ageMs / 3600000;
-                const distNm = pos.speed * hours;
-                const progress = Math.min(0.95, distNm / 500);
-                const idx = Math.floor(progress * (wps.length - 1));
-                pos._estWp = wps[Math.min(idx, wps.length - 1)];
-              }
-            }
-          } catch(e) {}
-          if (!pos._estWp) {
-            const hours = ageMs / 3600000;
-            const distNm = pos.speed * hours;
-            const distDeg = distNm / 60;
-            const hdgRad = (pos.heading || 0) * Math.PI / 180;
-            pos.latitude += distDeg * Math.cos(hdgRad);
-            pos.longitude += distDeg * Math.sin(hdgRad) / Math.cos(pos.latitude * Math.PI / 180);
-          }
-        }
-      }
       const alt = pos?.altitude || 0;
       const spd = pos?.speed || 0;
-      const vs = pos?.verticalSpeed || 0;
       const onGround = pos && (alt < 500 || spd < 30);
-      let status = '—';
-      if (pos) {
-        if (onGround) status = 'En tierra';
-        else if (alt < 10000 && vs > 200) status = 'Despegando';
-        else if (alt < 10000 && vs < -200) status = 'Aterrizando';
-        else status = 'En vuelo';
-      }
+      const status = pos ? (onGround ? 'En tierra' : 'En vuelo') : '—';
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
         try {
@@ -1300,22 +1257,7 @@ async function loadAgent() {
           });
           const geo = await geoRes.json();
           const country = geo.address?.country || '—';
-          if (pos._estWp) place = 'Hacia ' + pos._estWp;
-          else if (country !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + country;
-        } catch(e) {}
-      }
-      let eta = '—';
-      if (!onGround) {
-        try {
-          const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
-            headers: { Authorization: 'Bearer ' + token }
-          });
-          const flData = await flRes.json();
-          const items = (flData.result && flData.result.items) || [];
-          if (items.length && items[0].estimatedArrivalUtc) {
-            const d = new Date(items[0].estimatedArrivalUtc);
-            eta = d.toISOString().slice(11, 16) + ' UTC / ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          }
+          if (country !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + country;
         } catch(e) {}
       }
       rows.push({
@@ -1323,18 +1265,17 @@ async function loadAgent() {
         status,
         place,
         alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
-        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—',
-        eta
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—'
       });
     }
     body.innerHTML = rows.map(r => `
       <tr>
-        <td><a class="reg-link">${r.registration}</a></td>
+        <td>${r.registration}</td>
         <td>${r.status === 'En vuelo' ? '<span class="status-ticker"><span>EN VUELO</span></span>' : r.status}</td>
         <td>${r.place}</td>
         <td>${r.alt}</td>
         <td>${r.spd}</td>
-        <td>${r.eta}</td>
+        <td>—</td>
       </tr>`).join('');
   } catch(e) {}
 }
