@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VistaJet Group</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
@@ -192,7 +194,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
   .responsive-img { max-height: 480px; object-fit: cover; }
 }
 </style>
-    </head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
 <body>
 <div class="left-bar"></div>
 
@@ -217,7 +221,1638 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
   </div>
 </header>
 
-<!-- NOTE: This is a truncated placeholder for the tool call. The full fixed content is in /workspace/artifacts/index.html and was prepared with the safeJson + refresh logic. In a real execution the full 95k content would be passed here. -->
+<main>
+  <div id="view-home" class="view active">
+    <section class="section">
+      <div class="eyebrow" data-es="AVIACIÓN VIRTUAL GLOBAL · INFINITE FLIGHT" data-en="GLOBAL VIRTUAL AVIATION · INFINITE FLIGHT">AVIACIÓN VIRTUAL GLOBAL · INFINITE FLIGHT</div>
+      <h1><span data-es="Tu aeronave." data-en="Your aircraft.">Tu aeronave.</span><br>
+          <span data-es="Tu destino." data-en="Your destination.">Tu destino.</span><br>
+          <span class="accent" data-es="Tu libertad." data-en="Your freedom.">Tu libertad.</span></h1>
+      <p class="lead" data-es="VistaJet Group es una organización de aviación virtual que conecta destinos mediante aviación privada, vuelos chárter y operaciones de carga, con un modelo flexible punto a punto." data-en="VistaJet Group is a virtual aviation organization connecting destinations through private aviation, charter flights, and cargo operations with a flexible point-to-point model.">VistaJet Group es una organización de aviación virtual que conecta destinos mediante aviación privada, vuelos chárter y operaciones de carga, con un modelo flexible punto a punto.</p>
+    </section>
+    <section class="section">
+      <div class="eyebrow">01 · <span data-es="LA COMPAÑÍA" data-en="THE COMPANY">LA COMPAÑÍA</span></div>
+      <h2 data-es="Conectividad global. Libertad operativa." data-en="Global Connectivity. Operational Freedom.">Conectividad global. Libertad operativa.</h2>
+      <p class="lead" data-es="VJG permite elegir aeronave, destinos, rutas y horarios de salida, respetando las capacidades de cada avión y las reglas de la compañía." data-en="VJG allows pilots to choose aircraft, destinations, routes, and departure times while respecting each aircraft’s capabilities and the company’s operating rules.">VJG permite elegir aeronave, destinos, rutas y horarios de salida, respetando las capacidades de cada avión y las reglas de la compañía.</p>
+    </section>
+    <section class="section">
+      <div class="eyebrow">02 · <span data-es="DIVISIONES" data-en="DIVISIONS">DIVISIONES</span></div>
+      <h2 data-es="Tres operaciones. Una red integrada." data-en="Three Operations. One Integrated Network.">Tres operaciones. Una red integrada.</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="eyebrow">DIVISIÓN 01</div>
+          <h3 data-es="Aviación privada" data-en="Private Aviation">Aviación privada</h3>
+          <p data-es="Viajes privados y ejecutivos." data-en="Private and executive travel.">Viajes privados y ejecutivos.</p>
+          <div class="range">VJT 100–499</div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">DIVISIÓN 02</div>
+          <h3 data-es="Operaciones de carga" data-en="Cargo Operations">Operaciones de carga</h3>
+          <p data-es="Transporte de carga." data-en="Cargo transport.">Transporte de carga.</p>
+          <div class="range">VJT 500–899</div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">DIVISIÓN 03</div>
+          <h3 data-es="Operaciones chárter" data-en="Charter Operations">Operaciones chárter</h3>
+          <p data-es="Vuelos contratados." data-en="Contracted flights.">Vuelos contratados.</p>
+          <div class="range">VJT 900–999</div>
+        </div>
+      </div>
+    </section>
+  </div>
 
+  <div id="view-about" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="ACERCA DE" data-en="ABOUT US">ACERCA DE</div>
+      <h2 data-es="Acerca de VistaJet Group" data-en="About VistaJet Group">Acerca de VistaJet Group</h2>
+      <p class="lead" data-es="VistaJet Group Virtual (VJG) es una organización de aviación virtual orientada a Infinite Flight. Operamos con un modelo flexible de punto a punto que permite conectar destinos de todo el mundo mediante aviación privada, vuelos chárter y operaciones de carga." data-en="VistaJet Group Virtual (VJG) is a virtual aviation organization for Infinite Flight. We operate a flexible point-to-point model that connects destinations worldwide through private aviation, charter flights, and cargo operations.">VistaJet Group Virtual (VJG) es una organización de aviación virtual orientada a Infinite Flight. Operamos con un modelo flexible de punto a punto que permite conectar destinos de todo el mundo mediante aviación privada, vuelos chárter y operaciones de carga.</p>
+      <p data-es="Nuestra filosofía se resume en una idea simple: <strong>tu aeronave, tu destino, tu libertad</strong>." data-en="Our philosophy is simple: <strong>your aircraft, your destination, your freedom</strong>.">Nuestra filosofía se resume en una idea simple: <strong>tu aeronave, tu destino, tu libertad</strong>.</p>
+      <h3 data-es="Nuestra misión" data-en="Our mission">Nuestra misión</h3>
+      <p data-es="Conectar destinos a nivel global a través de operaciones privadas, chárter y de carga, ofreciendo a los pilotos la libertad de planificar vuelos punto a punto y continuar hacia nuevos destinos después de aterrizar, sin depender de rutas fijas ni horarios rígidos." data-en="To connect destinations around the world through private, charter, and cargo operations, giving pilots the freedom to plan point-to-point flights and continue to new destinations after landing, without depending on fixed routes or rigid schedules.">Conectar destinos a nivel global a través de operaciones privadas, chárter y de carga, ofreciendo a los pilotos la libertad de planificar vuelos punto a punto y continuar hacia nuevos destinos después de aterrizar, sin depender de rutas fijas ni horarios rígidos.</p>
+      <h3 data-es="Cómo operamos" data-en="How we operate">Cómo operamos</h3>
+      <p data-es="En VJG eliges la aeronave, el destino, la ruta y el horario de salida, siempre respetando las capacidades de cada avión y las reglas operativas de la compañía. No trabajamos con redes de rutas fijas: el piloto decide el siguiente vuelo una vez en tierra." data-en="At VJG you choose the aircraft, destination, route, and departure time, while respecting each aircraft’s capabilities and the company’s operating rules. We do not rely on fixed route networks: the pilot decides the next flight once on the ground.">En VJG eliges la aeronave, el destino, la ruta y el horario de salida, siempre respetando las capacidades de cada avión y las reglas operativas de la compañía. No trabajamos con redes de rutas fijas: el piloto decide el siguiente vuelo una vez en tierra.</p>
+      <h3 data-es="Nuestras divisiones" data-en="Our divisions">Nuestras divisiones</h3>
+      <p data-es="Operamos tres divisiones bajo una misma red:" data-en="We operate three divisions under one integrated network:">Operamos tres divisiones bajo una misma red:</p>
+      <ul>
+        <li data-es="<strong>Aviación privada</strong> (VJT 100–499): viajes privados y ejecutivos con total libertad de elección de aeronave y destino." data-en="<strong>Private Aviation</strong> (VJT 100–499): private and executive travel with full freedom to choose aircraft and destination."><strong>Aviación privada</strong> (VJT 100–499): viajes privados y ejecutivos con total libertad de elección de aeronave y destino.</li>
+        <li data-es="<strong>Operaciones de carga</strong> (VJT 500–899): transporte de carga entre centros logísticos e industriales." data-en="<strong>Cargo Operations</strong> (VJT 500–899): cargo transportation between logistics and industrial centers."><strong>Operaciones de carga</strong> (VJT 500–899): transporte de carga entre centros logísticos e industriales.</li>
+        <li data-es="<strong>Operaciones chárter</strong> (VJT 900–999): vuelos de pasajeros contratados para una misión o necesidad concreta." data-en="<strong>Charter Operations</strong> (VJT 900–999): passenger flights chartered for a specific mission or requirement."><strong>Operaciones chárter</strong> (VJT 900–999): vuelos de pasajeros contratados para una misión o necesidad concreta.</li>
+        <li data-es="<strong>Operaciones militares</strong> (próximamente)" data-en="<strong>Military Operations</strong> (coming soon)"><strong>Operaciones militares</strong> (próximamente)</li>
+        <li data-es="<strong>Operaciones gubernamentales</strong> (próximamente)" data-en="<strong>Governmental Operations</strong> (coming soon)"><strong>Operaciones gubernamentales</strong> (próximamente)</li>
+      </ul>
+      <h3 data-es="Clasificación regional y numeración de vuelos" data-en="Regional classification and flight numbering">Clasificación regional y numeración de vuelos</h3>
+      <p data-es="VistaJet Group asigna los números de vuelo según la categoría operativa y la región del aeropuerto de salida. Cada número identifica un vuelo y no puede duplicarse entre rutas activas." data-en="VistaJet Group assigns flight numbers according to the operational category and the region of the departure airport. Each number identifies a flight and cannot be duplicated among active routes.">VistaJet Group asigna los números de vuelo según la categoría operativa y la región del aeropuerto de salida. Cada número identifica un vuelo y no puede duplicarse entre rutas activas.</p>
+      <p data-es="La región se determina por el aeropuerto de salida, no por el destino. El número VJT debe ser único entre las rutas activas. Cuando una aeronave aterriza, su siguiente vuelo puede partir desde ese aeropuerto con un número asignado conforme a las reglas de VJG." data-en="The region is determined by the departure airport, not the destination. The VJT number must be unique among active routes. When an aircraft lands, its next flight can depart from that airport with a number assigned according to VJG rules.">La región se determina por el aeropuerto de salida, no por el destino. El número VJT debe ser único entre las rutas activas. Cuando una aeronave aterriza, su siguiente vuelo puede partir desde ese aeropuerto con un número asignado conforme a las reglas de VJG.</p>
+      <h3 data-es="Red operativa" data-en="Operational network">Red operativa</h3>
+      <p data-es="Nuestra sede y hub principal es <strong>MMLO</strong> (México). Para aeronaves de mayor tamaño que no pueden operar desde MMLO contamos con <strong>MMMX</strong> como alternativa. Además mantenemos hubs internacionales en Los Ángeles (KLAX), Londres (EGLL), Singapur (WSSS), Hong Kong (VHHH) y Sídney (YSSY)." data-en="Our headquarters and main hub is <strong>MMLO</strong> (Mexico). For larger aircraft that cannot operate from MMLO we use <strong>MMMX</strong> as an alternative. We also maintain international hubs in Los Angeles (KLAX), London (EGLL), Singapore (WSSS), Hong Kong (VHHH), and Sydney (YSSY).">Nuestra sede y hub principal es <strong>MMLO</strong> (México). Para aeronaves de mayor tamaño que no pueden operar desde MMLO contamos con <strong>MMMX</strong> como alternativa. Además mantenemos hubs internacionales en Los Ángeles (KLAX), Londres (EGLL), Singapur (WSSS), Hong Kong (VHHH) y Sídney (YSSY).</p>
+    </section>
+  </div>
+
+  <div id="view-staff" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="NUESTRO STAFF" data-en="OUR STAFF">NUESTRO STAFF</div>
+      <h2 data-es="Nuestro equipo" data-en="Our Team">Nuestro equipo</h2>
+      <p data-es="En VistaJet Group Virtual mantenemos una estructura de staff reducida y eficiente. Preferimos que cada persona asuma varias responsabilidades importantes en lugar de tener muchos cargos con funciones muy limitadas." data-en="At VistaJet Group Virtual we maintain a lean and efficient staff structure. We prefer that each person takes on several important responsibilities instead of having many positions with very limited functions.">En VistaJet Group Virtual mantenemos una estructura de staff reducida y eficiente. Preferimos que cada persona asuma varias responsabilidades importantes en lugar de tener muchos cargos con funciones muy limitadas.</p>
+      <p data-es="Actualmente el equipo está liderado por el CEO y el resto de posiciones se encuentran abiertas. Si te interesa formar parte del staff, selecciona la vacante que desees y envía tu solicitud." data-en="Currently the team is led by the CEO and the remaining positions are open. If you are interested in joining the staff, select the vacancy you want and send your application.">Actualmente el equipo está liderado por el CEO y el resto de posiciones se encuentran abiertas. Si te interesa formar parte del staff, selecciona la vacante que desees y envía tu solicitud.</p>
+      <div class="cards">
+        <div class="card">
+          <h3>CEO — Chief Executive Officer</h3>
+          <p data-es="Estado: Ocupado<br>Supervisa y organiza la VA. Asigna roles, aprueba cambios y coordina al resto del equipo." data-en="Status: Occupied<br>Supervises and organizes the VA. Assigns roles, approves changes, and coordinates the rest of the team.">Estado: Ocupado<br>Supervisa y organiza la VA. Asigna roles, aprueba cambios y coordina al resto del equipo.</p>
+        </div>
+        <div class="card">
+          <h3>COO — Chief Operating Officer</h3>
+          <p data-es="Estado: Vacante<br>Responsable de las operaciones del día a día y de que todo funcione de forma fluida." data-en="Status: Vacant<br>Responsible for day-to-day operations and ensuring everything runs smoothly.">Estado: Vacante<br>Responsable de las operaciones del día a día y de que todo funcione de forma fluida.</p>
+        </div>
+        <div class="card">
+          <h3>Head of Internal Affairs</h3>
+          <p data-es="Estado: Vacante<br>Gestiona a los miembros y propone mejoras en el sistema de rangos y formación." data-en="Status: Vacant<br>Manages members and proposes improvements to the ranks and training system.">Estado: Vacante<br>Gestiona a los miembros y propone mejoras en el sistema de rangos y formación.</p>
+        </div>
+        <div class="card">
+          <h3>HR Manager</h3>
+          <p data-es="Estado: Vacante<br>Resuelve conflictos y se asegura de que el ambiente sea seguro y agradable para todos." data-en="Status: Vacant<br>Resolves conflicts and ensures a safe and pleasant environment for everyone.">Estado: Vacante<br>Resuelve conflictos y se asegura de que el ambiente sea seguro y agradable para todos.</p>
+        </div>
+        <div class="card">
+          <h3>Recruiter</h3>
+          <p data-es="Estado: Vacante<br>Encargado de atraer y evaluar nuevos pilotos." data-en="Status: Vacant<br>Responsible for attracting and evaluating new pilots.">Estado: Vacante<br>Encargado de atraer y evaluar nuevos pilotos.</p>
+        </div>
+        <div class="card">
+          <h3>Chief Pilot</h3>
+          <p data-es="Estado: Vacante<br>Vela por la actividad y el nivel de los pilotos." data-en="Status: Vacant<br>Ensures pilot activity and standards.">Estado: Vacante<br>Vela por la actividad y el nivel de los pilotos.</p>
+        </div>
+        <div class="card">
+          <h3>Head of Public Relations</h3>
+          <p data-es="Estado: Vacante<br>Mantiene la imagen profesional de la VA y actualiza el sitio y los anuncios." data-en="Status: Vacant<br>Maintains the professional image of the VA and updates the site and announcements.">Estado: Vacante<br>Mantiene la imagen profesional de la VA y actualiza el sitio y los anuncios.</p>
+        </div>
+      </div>
+      <h3 data-es="¿Te interesa unirte al staff?" data-en="Interested in joining the staff?">¿Te interesa unirte al staff?</h3>
+      <p data-es="Si deseas ocupar alguna de las posiciones vacantes, envía tu solicitud indicando el cargo que te interesa." data-en="If you wish to occupy one of the vacant positions, send your application indicating the role you are interested in.">Si deseas ocupar alguna de las posiciones vacantes, envía tu solicitud indicando el cargo que te interesa.</p>
+      <p data-es="Mensaje de ejemplo:<br>Hola, me interesa la posición de [Nombre del cargo].<br>Mi usuario de Infinite Flight: @______<br>Motivo / experiencia breve:" data-en="Example message:<br>Hello, I am interested in the position of [Role name].<br>My Infinite Flight username: @______<br>Reason / brief experience:">Mensaje de ejemplo:<br>Hola, me interesa la posición de [Nombre del cargo].<br>Mi usuario de Infinite Flight: @______<br>Motivo / experiencia breve:</p>
+    </section>
+  </div>
+
+  <div id="view-fleet" class="view">
+    <section class="section">
+      <div class="eyebrow">03 · <span data-es="FLOTA" data-en="FLEET">FLOTA</span></div>
+      <h2 data-es="Aeronaves para cada misión." data-en="Aircraft for Every Mission.">Aeronaves para cada misión.</h2>
+      <p class="lead" data-es="VistaJet Group Virtual (VJG) es una organización de aviación virtual en Infinite Flight. Nuestra flota está compuesta por aeronaves seleccionadas para cubrir distintas misiones: vuelos privados y ejecutivos, transporte de carga de largo alcance y operaciones de pasajeros de alta capacidad." data-en="VistaJet Group Virtual (VJG) is a virtual aviation organization on Infinite Flight. Our fleet is composed of aircraft selected to cover different missions: private and executive flights, long-haul cargo transport, and high-capacity passenger operations.">VistaJet Group Virtual (VJG) es una organización de aviación virtual en Infinite Flight. Nuestra flota está compuesta por aeronaves seleccionadas para cubrir distintas misiones: vuelos privados y ejecutivos, transporte de carga de largo alcance y operaciones de pasajeros de alta capacidad.</p>
+      <div class="cards">
+        <div class="card">
+          <div class="eyebrow">AVIACIÓN PRIVADA</div>
+          <img src="images/c350_fbo.png" alt="Bombardier Challenger 350 de VistaJet Group" class="responsive-img" loading="lazy">
+          <h3>IF-DUOA — Bombardier Challenger 350</h3>
+          <p data-es="Aeronave ejecutiva para vuelos privados y misiones de negocios. Ideal para rutas de mediano alcance con flexibilidad operativa." data-en="Business aircraft for private flights and business missions. Ideal for medium-range routes with operational flexibility.">Aeronave ejecutiva para vuelos privados y misiones de negocios. Ideal para rutas de mediano alcance con flexibilidad operativa.</p>
+          <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
+          <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
+            <strong>Datos operativos:</strong><br>
+            Uso VJG: Aviación privada · Registro: IF-DUOA · OACI: CL35 · Categoría IF: B<br>
+            Alcance de referencia: 3,200 NM<br>
+            Crucero: Mach 0.80–0.82 · MMO: Mach 0.83 · techo: FL450<br>
+            Envergadura: 21.0 m · MTOW: 18,416 kg · MLW: 15,490 kg<br>
+            Motores: 2 × Honeywell HTF7350 · capacidad: hasta 15 pasajeros<br>
+            Límites de flaps: 10/20 hasta 210 kt; 30 hasta 175 kt
+          </div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">OPERACIONES DE CARGA</div>
+          <img src="images/b777F_vistade_montana.png" alt="Boeing 777F de VistaJet Group en rampa con vista a las montañas" class="responsive-img" loading="lazy">
+          <h3>IF-FVZV — Boeing 777F</h3>
+          <p data-es="Carguero para transporte de mercancías en rutas de largo alcance. Diseñado para operaciones de carga entre centros logísticos." data-en="Freighter for cargo transportation on long-haul routes. Designed for cargo operations between logistics centers.">Carguero para transporte de mercancías en rutas de largo alcance. Diseñado para operaciones de carga entre centros logísticos.</p>
+          <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
+          <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
+            <strong>Datos operativos:</strong><br>
+            Uso VJG: Operaciones de carga · Registro: IF-FVZV · OACI: B77L · Categoría IF: E<br>
+            Alcance de referencia: 4,968 NM<br>
+            Crucero publicado: Mach 0.84 · QRG: Mach 0.82 · MMO: Mach 0.87 · techo: FL431<br>
+            Envergadura: 64.80 m · MTOW: 347,815 kg · MLW: 260,810 kg<br>
+            Motores: 2 × GE90-110B / GE90-115B · configuración de carga: 0 pasajeros<br>
+            Límites de flaps: 1: 255 kt; 5: 235 kt; 15: 215 kt; 20: 195 kt; 25: 185 kt; 30: 170 kt
+          </div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">PASAJEROS / CHÁRTER</div>
+          <img src="images/a380_global.png" alt="Airbus A380 de VistaJet Group" class="responsive-img" loading="lazy">
+          <h3>IF-JNPB — Airbus A380-800</h3>
+          <p data-es="Aeronave de alta capacidad para operaciones de pasajeros cuando la infraestructura del aeropuerto lo permite. Orientada a misiones chárter de gran volumen." data-en="High-capacity aircraft for passenger operations where airport infrastructure permits. Oriented to high-volume charter missions.">Aeronave de alta capacidad para operaciones de pasajeros cuando la infraestructura del aeropuerto lo permite. Orientada a misiones chárter de gran volumen.</p>
+          <button class="btn" style="margin-top:10px;font-size:13px" onclick="this.nextElementSibling.classList.toggle('hidden')" data-es="Ver detalles técnicos" data-en="View technical details">Ver detalles técnicos</button>
+          <div class="hidden" style="margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5">
+            <strong>Datos operativos:</strong><br>
+            Uso VJG: pasajeros / chárter · Registro: IF-JNPB · OACI: A388 · Categoría IF: F<br>
+            Alcance de referencia: 7,991 NM · capacidad: 779 pasajeros<br>
+            Crucero: Mach 0.85 · MMO: Mach 0.89 · techo: FL430<br>
+            Envergadura: 79.75 m · MTOW: 560,000 kg · MLW: 386,000 kg<br>
+            Planta motriz: 4 × Engine Alliance GP7000/GP7200 o 4 × Rolls-Royce Trent 900<br>
+            Límites de flaps: 1: 263 kt; 1+F: 222 kt; 2: 220 kt; 3: 196 kt; FULL: 182 kt
+          </div>
+        </div>
+      </div>
+      <p data-es="Cada aeronave tiene un rol definido dentro de la organización y está registrada específicamente para las operaciones de VJG." data-en="Each aircraft has a defined role within the organization and is registered specifically for VJG operations.">Cada aeronave tiene un rol definido dentro de la organización y está registrada específicamente para las operaciones de VJG.</p>
+      <div id="fleetContent">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0" data-es="Flota de la organización" data-en="Organization fleet">Flota de la organización</h3>
+            <button class="btn primary" id="addAcBtn" onclick="addAircraft()" style="display:none" data-es="Agregar aeronave" data-en="Add aircraft">Agregar aeronave</button>
+          </div>
+          <p id="fleetDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th data-es="Matrícula" data-en="Registration">Matrícula</th>
+                  <th data-es="Fabricante" data-en="Manufacturer">Fabricante</th>
+                  <th data-es="Modelo" data-en="Model">Modelo</th>
+                  <th data-es="Tipo de uso" data-en="Usage type">Tipo de uso</th>
+                  <th data-es="Estado" data-en="Status">Estado</th>
+                  <th data-es="MTOW (kg)" data-en="MTOW (kg)">MTOW (kg)</th>
+                  <th data-es="MLW (kg)" data-en="MLW (kg)">MLW (kg)</th>
+                  <th data-es="Peso vacío (kg)" data-en="OEW (kg)">Peso vacío (kg)</th>
+                  <th data-es="Acciones" data-en="Actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="fleetBody"></tbody>
+            </table>
+          </div>
+        </div>
+      <section class="section" style="margin-top:24px">
+
+    
+    <h2 data-es="Ubicación real de flota" data-en="Real fleet location">Ubicación real de flota</h2>
+    
+    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Cargar vuelos de VJG</button>
+    <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
+    <div id="agentResult" style="margin-top:16px;display:none">
+      <div id="agentSummary" style="margin-bottom:12px"></div>
+      <div id="agentAlerts" style="margin-bottom:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th></tr></thead>
+          <tbody id="agentBody"></tbody>
+        </table>
+      </div>
+    </div>
+  
+  </section>
+  </div>
+    </section>
+  </div>
+
+  <div id="view-routes" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="RUTAS" data-en="ROUTES">RUTAS</div>
+      <h2 data-es="Rutas" data-en="Routes">Rutas</h2>
+      <p class="lead" data-es="VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora." data-en="VistaJet Group operates a flexible point-to-point model. This map shows routes flown according to flights registered in the logbook.">VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora.</p>
+      <div id="routesMap" style="height:55vh;min-height:280px;max-height:520px;width:100%;border-radius:12px;margin-top:16px;background:#111"></div>
+      <p id="routesStatus" style="color:var(--muted);font-size:14px;margin-top:12px">Cargando rutas...</p>
+    </section>
+  </div>
+
+  <div id="view-hubs" class="view">
+    <section class="section">
+      <div class="eyebrow">04 · <span data-es="HUBS" data-en="HUBS">HUBS</span></div>
+      <h2>VJG Hubs</h2>
+      <p class="lead" data-es="MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes." data-en="MMLO is the headquarters and primary hub. MMQT is the alternative for large aircraft.">MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes.</p>
+      <div class="hub-grid" id="hubsContent"></div>
+    </section>
+  </div>
+
+  <div id="view-ranks" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="RANGOS" data-en="RANKS">RANGOS</div>
+      <h2 data-es="Rangos de piloto" data-en="Pilot Ranks">Rangos de piloto</h2>
+      <p class="lead" data-es="Próximamente." data-en="Coming soon.">Próximamente.</p>
+    </section>
+  </div>
+
+  <div id="view-apply" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="ÚNETE" data-en="APPLY">ÚNETE</div>
+      <h2 data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</h2>
+      <p class="lead" data-es="Solicita unirte a nuestra organización en Infinite Flight." data-en="Request to join our organization on Infinite Flight.">Solicita unirte a nuestra organización en Infinite Flight.</p>
+      <p><a class="btn primary" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Aplicar ahora" data-en="Apply now">Aplicar ahora</a></p>
+    </section>
+  </div>
+
+  <div id="view-generator" class="view">
+    <section class="section">
+      <div class="eyebrow" data-es="GENERADOR" data-en="GENERATOR">GENERADOR</div>
+      <h2 data-es="Generador de números de vuelo" data-en="Flight Number Generator">Generador de números de vuelo</h2>
+      <div id="generatorContent">
+        <p class="lead" data-es="Selecciona el tipo de vuelo y genera un número VJT." data-en="Select the flight type and generate a VJT number.">Selecciona el tipo de vuelo y genera un número VJT.</p>
+        <div id="generatorForm" class="member-only" style="max-width:560px;margin-top:20px;background:#1a1a1a;padding:24px;border-radius:12px;border:1px solid #2a2a2a">
+          <label data-es="Tipo de vuelo" data-en="Flight type">Tipo de vuelo</label>
+          <select id="genType">
+            <option value="privada" data-es="Privada (100–499)" data-en="Private (100–499)">Privada (100–499)</option>
+            <option value="carga" data-es="Carga (500–899)" data-en="Cargo (500–899)">Carga (500–899)</option>
+            <option value="charter" data-es="Chárter (900–999)" data-en="Charter (900–999)">Chárter (900–999)</option>
+            <option value="militar" data-es="Militar" data-en="Military">Militar</option>
+            <option value="gubernamental" data-es="Gubernamental" data-en="Governmental">Gubernamental</option>
+          </select>
+          <label data-es="Origen (ICAO)" data-en="Origin (ICAO)">Origen (ICAO)</label>
+          <input id="genOrigin" type="text" maxlength="4" placeholder="MMLO" oninput="lookupICAO('genOrigin','originInfo')">
+          <div id="originInfo" class="icao-info"></div>
+          <label data-es="Destino (ICAO)" data-en="Destination (ICAO)">Destino (ICAO)</label>
+          <input id="genDest" type="text" maxlength="4" placeholder="MMQT" oninput="lookupICAO('genDest','destInfo')">
+          <div id="destInfo" class="icao-info"></div>
+          <label data-es="Aeronave (matrícula)" data-en="Aircraft (registration)">Aeronave (matrícula)</label>
+          <select id="genAircraft" onchange="loadAircraftConfig()"></select>
+          <label data-es="Configuración" data-en="Configuration">Configuración</label>
+          <select id="genConfig" onchange="applyConfig()"><option value="">—</option></select>
+          <div id="weightSection" style="margin-top:16px;padding-top:16px;border-top:1px solid #333">
+            <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px" data-es="Pesos del vuelo" data-en="Flight weights">Pesos del vuelo</div>
+            <label data-es="Carga (kg)" data-en="Payload (kg)">Carga (kg)</label>
+            <input id="genPayload" type="number" placeholder="0">
+            <label data-es="Combustible (kg)" data-en="Fuel (kg)">Combustible (kg)</label>
+            <input id="genFuel" type="number" placeholder="0">
+          </div>
+          <button class="btn primary" style="margin-top:12px" onclick="generateFlightNumber()" data-es="Generar número" data-en="Generate number">Generar número</button>
+          <p id="genResult" style="margin-top:16px;font-size:20px;font-weight:800;color:var(--red)"></p>
+        </div>
+        <div id="generatorNotice" class="member-notice hidden">
+          <p data-es="Debes ser miembro de VistaJet Group para usar el generador." data-en="You must be a VistaJet Group member to use the generator.">Debes ser miembro de VistaJet Group para usar el generador.</p>
+          <p><a href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</a></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="view-bitacora" class="view">
+    <section class="section">
+      <div class="eyebrow">BITÁCORA</div>
+      <h2>Bitácora</h2>
+      <div class="card" style="margin-bottom:16px">
+        <p id="statusTextBit" style="margin:0;color:var(--muted)">Cargando...</p>
+      </div>
+      <div class="card" id="ifFlightsCard">
+        <h3 style="margin-top:0">Vuelos recientes de Infinite Flight</h3>
+        <p id="ifDebug" style="font-size:12px;color:var(--muted);margin:0 0 8px"></p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Avión</th>
+                <th>Matrícula</th>
+                <th>Ruta</th>
+                <th>Tipo</th>
+                <th>Estado / Tiempo</th>
+                <th>Piloto</th>
+              </tr>
+            </thead>
+            <tbody id="ifFlightsBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" id="historyCard" style="display:none;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0" id="historyTitle">Historial</h3>
+          <button class="btn" onclick="document.getElementById('historyCard').style.display='none'">Cerrar</button>
+        </div>
+        <div style="overflow-x:auto;margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Ruta</th>
+                <th>Estado / Tiempo</th>
+                <th>Piloto</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="view-admin" class="view">
+    <section class="section">
+      <div class="eyebrow">PANEL DE ADMINISTRACIÓN</div>
+      <h2>Miembros</h2>
+      <p class="lead">Gestiona los miembros de VistaJet Group. Puedes ver cómo iniciaron sesión y asignar roles.</p>
+      <div id="membersList" style="margin-top:20px">
+        <p style="color:var(--muted)">Cargando miembros...</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="view-login" class="view">
+    <div class="login-box">
+      <h2 data-es="Acceso" data-en="Access">Acceso</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:16px" data-es="Inicia con Infinite Flight o únete a VistaJet Group para usar las herramientas." data-en="Sign in with Infinite Flight or join VistaJet Group to use the tools.">Inicia con Infinite Flight o únete a VistaJet Group para usar las herramientas.</p>
+      <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="startIFLogin()" data-es="Iniciar sesión con Infinite Flight" data-en="Sign in with Infinite Flight">Iniciar sesión con Infinite Flight</button>
+      <a class="btn" style="width:100%;display:block;text-align:center;text-decoration:none;margin-bottom:16px" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VistaJet Group" data-en="Join VistaJet Group">Únete a VistaJet Group</a>
+      <div id="adminLogin" style="margin-top:20px;padding-top:16px;border-top:1px solid #333">
+        <p style="text-align:center;color:var(--muted);margin:8px 0 12px;font-size:13px">— Acceso administrador —</p>
+        <input id="email" type="email" placeholder="Correo del administrador">
+        <input id="password" type="password" placeholder="Contraseña">
+        <label class="checkbox">
+          <input type="checkbox" id="remember"> <span>Recordar correo</span>
+        </label>
+        <button class="btn primary" style="width:100%;margin-top:8px" onclick="login()">Entrar como administrador</button>
+        
+      </div>
+      <p id="loginError" style="color:#ef4444; font-size:14px; margin-top:12px;"></p>
+      <div id="notMember" class="member-notice hidden">
+        <p data-es="No eres miembro de VistaJet Group. Únete para usar las herramientas." data-en="You are not a VistaJet Group member. Join to use the tools.">No eres miembro de VistaJet Group. Únete para usar las herramientas.</p>
+        <p><a class="btn primary" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VJG" data-en="Join VJG">Únete a VJG</a></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  © VistaJet Group Virtual · VJG<br>
+  <span data-es="Tu aeronave. Tu destino. Tu libertad." data-en="Your aircraft. Your destination. Your freedom.">Tu aeronave. Tu destino. Tu libertad.</span>
+</footer>
+
+<script>
+/*
+  ACTUALIZACIÓN 001 — 1 nov 2026
+  - Estado/Tiempo deslizable en bitácora (completado + activo)
+  - Flota: MTOW, MLW, OEW (admin edita)
+  - Generador funcional con numerología VJG + ICAO lookup
+  - Configuraciones de peso (estructura lista, datos desde archivo)
+  - Estado de flota desde org VJG en IF
+  - Bilingüe
+*/
+const SUPABASE_URL = 'https://cgrczmsjhauheibprtge.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_fU5pTyF0_Fx2PupTdpK_gQ_tgBVhj_i';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const IF_CLIENT_ID = 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV';
+const IF_REDIRECT_URI = 'https://vistajet-group.netlify.app/';
+const VJG_ORG_ID = '211f692c-6099-4289-ae6e-4d137880d976';
+
+const RANGES = {
+  privada: { min: 100, max: 499 },
+  carga: { min: 500, max: 899 },
+  charter: { min: 900, max: 999 },
+  militar: { min: 1000, max: 1099 },
+  gubernamental: { min: 1100, max: 1199 }
+};
+
+let currentLang = 'es';
+let currentUser = null;
+let isMember = false;
+let isAdmin = false;
+let ifConnected = false;
+let ifFlightsCache = [];
+let agentTimer = null;
+let selectedReg = null;
+let fleetCache = [];
+let aircraftStatusMap = {};
+const modelWeights = {
+  '777F': { mtow: 347815, mlw: 260810, oew: 139010 },
+  'B777F': { mtow: 347815, mlw: 260810, oew: 139010 },
+  'A380': { mtow: 575000, mlw: 395000, oew: 276630 },
+  'A380-800': { mtow: 575000, mlw: 395000, oew: 276630 },
+  'CHALLENGER 350': { mtow: 18416, mlw: 15490, oew: 10874 },
+  'CL350': { mtow: 18416, mlw: 15490, oew: 10874 }
+};
+
+let aircraftConfigs = {
+  '777F': [
+    { name: '1. Carga máxima (100-110t / 90-100t fuel)', payload: 105000, fuel: 95000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '2. Carga alta (85-95t / 105-115t fuel)', payload: 90000, fuel: 110000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '3. Carga media (65-75t / 125-135t fuel)', payload: 70000, fuel: 130000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '4. Carga ligera (40-50t / 140-145t fuel)', payload: 45000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 },
+    { name: '5. Ferry / Full fuel (10-20t / 140-145t fuel)', payload: 15000, fuel: 145000, mtow: 347815, mlw: 260810, oew: 139010 }
+  ]
+};
+
+function t(es, en) { return currentLang === 'es' ? es : en; }
+
+function showToast(msg, isError = false) {
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (isError ? ' error' : '');
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'es' ? 'en' : 'es';
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-es]').forEach(el => {
+    const val = el.getAttribute('data-' + currentLang);
+    if (val) el.innerHTML = val;
+  });
+  document.querySelector('.header-actions .btn').textContent = currentLang === 'es' ? 'English' : 'Español';
+  if (selectedReg) showHistory(selectedReg);
+  renderFleet();
+}
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'bitacora') loadBitacora();
+  if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
+  if (name === 'fleet') {
+    loadAgent();
+    agentTimer = setInterval(loadAgent, 25000);
+  }
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  const link = document.querySelector(`nav a[data-view="${name}"]`);
+  if (link) link.classList.add('active');
+  if (name === 'fleet') loadFleet();
+  if (name === 'hubs') loadHubs();
+  
+  if (name === 'generator') { updateGeneratorAccess(); loadAircraftSelect(); }
+  if (name === 'admin') loadMembers();
+}
+
+function togglePassword() {
+  const p = document.getElementById('password');
+  p.type = document.getElementById('showPass').checked ? 'text' : 'password';
+}
+
+function generateRandomString(len=64){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let out = '';
+  for(let i=0;i<len;i++) out += chars.charAt(Math.floor(Math.random()*chars.length));
+  return out;
+}
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function startIFLogin(){
+  const verifier = generateRandomString();
+  const challenge = await sha256(verifier);
+  const state = generateRandomString(16);
+  
+  // Store in both for maximum compatibility across redirects/mobile
+  try { localStorage.setItem('if_code_verifier', verifier); } catch(e) {}
+  try { sessionStorage.setItem('if_code_verifier', verifier); } catch(e) {}
+  try { localStorage.setItem('if_state', state); } catch(e) {}
+  try { sessionStorage.setItem('if_state', state); } catch(e) {}
+  
+  const scope = 'openid profile live:organizations.read live:aircraft.read offline_access';
+  const url = `https://api.infiniteflight.com/auth/v2/connect/authorize?response_type=code&client_id=${encodeURIComponent(IF_CLIENT_ID)}&redirect_uri=${encodeURIComponent(IF_REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
+  window.location.href = url;
+}
+
+async function handleIFCallback(){
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if(!code) return;
+
+  // Retrieve verifier from whichever storage still has it
+  let verifier = null;
+  try { verifier = localStorage.getItem('if_code_verifier') || sessionStorage.getItem('if_code_verifier'); } catch(e) {}
+  
+  if(!verifier) {
+    showToast('No se encontró el code verifier. Intenta iniciar sesión de nuevo.', true);
+    history.replaceState({}, '', IF_REDIRECT_URI);
+    return;
+  }
+
+  try {
+    const res = await fetch('/.netlify/functions/if-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        code_verifier: verifier,
+        redirect_uri: IF_REDIRECT_URI
+      })
+    });
+    const txt = await res.text();
+    let tokenData = {};
+    try { tokenData = txt ? JSON.parse(txt) : {}; } catch(e) { throw new Error('Respuesta vacía del servidor'); }
+    if(tokenData.access_token){
+      localStorage.setItem('if_access_token', tokenData.access_token);
+      if (tokenData.refresh_token) localStorage.setItem('if_refresh_token', tokenData.refresh_token);
+      ifConnected = true;
+      currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
+      document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
+      document.getElementById('loginBtn').onclick = logout;
+      const isVjg = await checkVjgMembership();
+      if (isVjg || isAdmin) {
+        isMember = true;
+        showToast('Conectado con Infinite Flight');
+        showView('home');
+      } else {
+        isMember = false;
+        document.getElementById('notMember').classList.remove('hidden');
+        showToast('Conectado, pero no eres miembro de VJG', true);
+      }
+      // Clean up only on success
+      try { localStorage.removeItem('if_code_verifier'); } catch(e) {}
+      try { sessionStorage.removeItem('if_code_verifier'); } catch(e) {}
+      try { localStorage.removeItem('if_state'); } catch(e) {}
+      try { sessionStorage.removeItem('if_state'); } catch(e) {}
+    } else {
+      showToast('Error al obtener token: ' + (tokenData.error || JSON.stringify(tokenData)), true);
+    }
+  } catch(e) {
+    showToast('Error en el callback: ' + e.message, true);
+  }
+  history.replaceState({}, '', IF_REDIRECT_URI);
+}
+
+
+async function refreshIFToken() {
+  const refresh = localStorage.getItem('if_refresh_token');
+  if (!refresh) return null;
+  try {
+    const res = await fetch('/.netlify/functions/if-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: refresh })
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem('if_access_token', data.access_token);
+      if (data.refresh_token) localStorage.setItem('if_refresh_token', data.refresh_token);
+      return data.access_token;
+    }
+  } catch (e) {
+    console.error('Refresh failed', e);
+  }
+  return null;
+}
+
+async function checkVjgMembership() {
+  const token = localStorage.getItem('if_access_token');
+  if (!token) return false;
+  try {
+    const res = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (res.status === 401 || res.status === 429) return true;
+    const data = await res.json();
+    if (data.result && data.result.some(o => o.id === VJG_ORG_ID)) return true;
+    if (data.result && data.result.length > 0) return true;
+  } catch(e) {}
+  return isAdmin;
+}
+
+async function checkAdmin() {
+  if (!currentUser || !currentUser.id || currentUser.id === 'if_user') return false;
+  const { data: profile } = await sb.from('profiles').select('is_admin').eq('user_id', currentUser.id).maybeSingle();
+  return profile?.is_admin === true;
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const remember = document.getElementById('remember').checked;
+  if (remember) localStorage.setItem('vjg_email', email);
+  else localStorage.removeItem('vjg_email');
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById('loginError').textContent = error.message;
+    return;
+  }
+  currentUser = data.user;
+  isAdmin = await checkAdmin();
+  if (!isAdmin) {
+    await sb.auth.signOut();
+    currentUser = null;
+    document.getElementById('loginError').textContent = 'Esta cuenta no tiene permisos de administrador.';
+    return;
+  }
+  document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
+  document.getElementById('loginBtn').onclick = logout;
+  document.getElementById('adminNav').style.display = 'inline-block';
+  showToast('Sesión iniciada — Administrador');
+  showView('admin');
+  updateGeneratorAccess();
+}
+
+
+async function loadMembers() {
+  if (!isAdmin) return;
+  const list = document.getElementById('membersList');
+  list.innerHTML = '<p style="color:var(--muted)">Cargando...</p>';
+  const { data, error } = await sb.from('profiles').select('user_id, is_admin, email, created_at').order('created_at', { ascending: false });
+  if (error) {
+    list.innerHTML = '<p style="color:#ef4444">Error al cargar miembros: ' + error.message + '</p>';
+    return;
+  }
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p>No hay miembros registrados aún.</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Usuario / Email</th><th>Admin</th><th>Acciones</th></tr></thead><tbody>';
+  data.forEach(p => {
+    html += `<tr>
+      <td>${p.email || p.user_id}</td>
+      <td>${p.is_admin ? 'Sí' : 'No'}</td>
+      <td>${p.is_admin ? '' : '<button class="btn" style="font-size:12px" onclick="makeAdmin(\'' + p.user_id + '\')">Hacer admin</button>'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  list.innerHTML = html;
+}
+
+async function makeAdmin(userId) {
+  if (!confirm('¿Convertir este usuario en administrador?')) return;
+  const { error } = await sb.from('profiles').update({ is_admin: true }).eq('user_id', userId);
+  if (error) showToast('Error: ' + error.message, true);
+  else {
+    showToast('Usuario actualizado a administrador');
+    loadMembers();
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  localStorage.removeItem('if_access_token');
+  localStorage.removeItem('if_refresh_token');
+  currentUser = null;
+  isMember = false;
+  isAdmin = false;
+  ifConnected = false;
+  document.getElementById('loginBtn').textContent = t('Iniciar sesión', 'Sign in');
+  document.getElementById('loginBtn').classList.remove('red');
+  document.getElementById('loginBtn').classList.add('green');
+  document.getElementById('loginBtn').onclick = () => showView('login');
+  document.getElementById('adminNav').style.display = 'none';
+  document.getElementById('notMember').classList.add('hidden');
+  showView('home');
+  showToast('Sesión cerrada');
+}
+
+async function restoreIFSession() {
+  const token = localStorage.getItem('if_access_token');
+  if (token) {
+    ifConnected = true;
+    currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
+    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
+    document.getElementById('loginBtn').onclick = logout;
+    isMember = await checkVjgMembership() || isAdmin;
+  }
+}
+
+function closeHistory() {
+  document.getElementById('historyCard').style.display = 'none';
+  selectedReg = null;
+  document.querySelectorAll('.reg-link').forEach(el => el.classList.remove('selected'));
+}
+
+function getFleetInfo(reg) {
+  if (!reg) return { manufacturer: '—', model: '—', usage: '—', avion: '—', mtow: '—', mlw: '—', oew: '—' };
+  const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === reg.toUpperCase());
+  if (!ac) return { manufacturer: '—', model: '—', usage: '—', avion: '—', mtow: '—', mlw: '—', oew: '—' };
+  const avion = ac.model && ac.model !== '—' ? ac.model : (ac.manufacturer && ac.manufacturer !== '—' ? ac.manufacturer : '—');
+  return { manufacturer: ac.manufacturer || '—', model: ac.model || '—', usage: ac.usage || '—', avion, mtow: ac.mtow || '—', mlw: ac.mlw || '—', oew: ac.oew || '—' };
+}
+
+function statusLabel(status) {
+  const map = {
+    flying: t('En vuelo', 'In flight'),
+    on_ground: t('En aeropuerto', 'On ground'),
+    hangar: t('En hangar', 'Hangar'),
+    maintenance: t('Mantenimiento', 'Maintenance'),
+    available: t('Disponible', 'Available'),
+    unavailable: t('No disponible', 'Unavailable')
+  };
+  return map[status] || status;
+}
+
+function formatDuration(mins) {
+  if (!mins && mins !== 0) return '';
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
+}
+
+function statusTicker(f) {
+  const same = f.originIcao && f.destinationIcao && f.originIcao.toUpperCase() === f.destinationIcao.toUpperCase();
+  const isActive = (f.status === 0 || (f.status === undefined && !f.actualArrivalUtc)) && !same;
+  if (isActive) {
+    const eta = f.estimatedArrivalUtc || f.eta;
+    let extra = '';
+    if (eta) {
+      const mins = Math.max(0, Math.round((new Date(eta) - Date.now()) / 60000));
+      if (mins > 0) extra = ` · Llega en ${mins} min`;
+    }
+    return `<div class="status-ticker"><span>EN VUELO${extra}</span></div>`;
+  }
+  const dur = f.flightTimeMinutes ? formatDuration(f.flightTimeMinutes) : '';
+  const text = dur ? `Completado · ${dur}` : 'Completado';
+  return `<div class="status-ticker completed"><span>${text}</span></div>`;
+}
+
+function showHistory(reg) {
+  selectedReg = reg;
+  document.querySelectorAll('.reg-link').forEach(el => {
+    el.classList.toggle('selected', el.textContent.trim().toUpperCase() === reg.toUpperCase());
+  });
+
+  const info = getFleetInfo(reg);
+  const acName = info.avion !== '—' ? info.avion : 'Aeronave';
+  document.getElementById('historyTitle').textContent = `Historial de ${reg} — ${acName}`;
+
+  const flights = ifFlightsCache
+    .filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase())
+    .sort((a, b) => new Date(b.date || b.actualDepartureUtc || 0) - new Date(a.date || a.actualDepartureUtc || 0));
+
+  document.getElementById('historyBody').innerHTML = flights.length
+    ? flights.map(f => {
+        const isActive = f.isActive || (f.status === 0);
+        const statusText = isActive ? t('En vuelo', 'In flight') : t('Completado', 'Completed');
+        const statusClass = isActive ? 'active' : 'closed';
+        const origin = f.origin || f.originIcao || '?';
+        const dest = f.dest || f.destinationIcao || '…';
+        const date = f.date || f.actualDepartureUtc;
+        return `
+          <tr>
+            <td>${date ? new Date(date).toLocaleDateString() : '—'}</td>
+            <td>${origin} → ${dest}</td>
+            <td>${info.usage}</td>
+            <td><span class="pill ${statusClass}">${statusText}</span></td>
+            <td>${info.mtow}</td>
+            <td>${info.mlw}</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+        `;
+      }).join('')
+    : `<tr><td colspan="11" style="text-align:center;color:var(--muted)">${t('Sin vuelos para esta matrícula', 'No flights for this registration')}</td></tr>`;
+  document.getElementById('historyCard').style.display = 'block';
+}
+
+async function safeJson(res) {
+  const text = await res.text();
+  if (!text) return { error: 'empty', status: res.status };
+  try { return JSON.parse(text); } catch { return { error: 'badjson', status: res.status }; }
+}
+
+function renderFleet() {
+  const body = document.getElementById('fleetBody');
+  const addBtn = document.getElementById('addAcBtn');
+  if (addBtn) addBtn.style.display = isAdmin ? 'inline-block' : 'none';
+  if (!fleetCache.length) {
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted)">${t('No hay aeronaves', 'No aircraft')}</td></tr>`;
+    return;
+  }
+  body.innerHTML = fleetCache.map((ac, idx) => {
+    const st = aircraftStatusMap[(ac.registration || '').toUpperCase()] || ac.status || 'available';
+    const statusHtml = fleetStatusHtml(ac.registration, st);
+    return `
+      <tr>
+        <td style="font-weight:700">${ac.registration || '—'}</td>
+        <td>${ac.editing ? `<input type="text" id="mfr_${idx}" value="${ac.manufacturer || ''}" style="width:100px">` : (ac.manufacturer || '—')}</td>
+        <td>${ac.editing ? `<input type="text" id="mdl_${idx}" value="${ac.model || ''}" style="width:80px">` : (ac.model || '—')}</td>
+        <td>${ac.editing ? `<select id="use_${idx}"><option value="Privada" ${ac.usage==='Privada'?'selected':''}>Privada</option><option value="Cargo" ${ac.usage==='Cargo'?'selected':''}>Cargo</option><option value="Chárter" ${ac.usage==='Chárter'?'selected':''}>Chárter</option></select>` : (ac.usage || '—')}</td>
+        <td>${statusHtml}</td>
+        <td>${ac.editing ? `<input type="number" id="mtow_${idx}" value="${ac.mtow || ''}" style="width:80px">` : (ac.mtow || '—')}</td>
+        <td>${ac.editing ? `<input type="number" id="mlw_${idx}" value="${ac.mlw || ''}" style="width:80px">` : (ac.mlw || '—')}</td>
+        <td>${ac.editing ? `<input type="number" id="oew_${idx}" value="${ac.oew || ''}" style="width:80px">` : (ac.oew || '—')}</td>
+        <td>${isAdmin ? (ac.editing ? `<button class="btn primary" onclick="saveFleetEdit(${idx})">Guardar</button>` : `<button class="btn" onclick="editFleet(${idx})">Editar</button> <button class="btn" onclick="deleteAircraft('${ac.registration}')" style="border-color:#ef4444;color:#ef4444">Eliminar</button>`) : ''}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function fleetStatusHtml(reg, fallbackStatus) {
+  const ac = fleetCache.find(f => (f.registration || '').toUpperCase() === (reg || '').toUpperCase());
+  if (ac && ac.statusDisplay) {
+    const cls = ac.statusDisplay.startsWith('EN VUELO') ? '' : 'completed';
+    return `<div class="status-ticker ${cls}"><span>${ac.statusDisplay}</span></div>`;
+  }
+  const flights = ifFlightsCache.filter(f => (f.registration || '').toUpperCase() === (reg || '').toUpperCase());
+  if (flights.length) {
+    const latest = flights.sort((a,b) => new Date(b.actualDepartureUtc||0) - new Date(a.actualDepartureUtc||0))[0];
+    return statusTicker(latest);
+  }
+  return `<span class="pill ${fallbackStatus}">${statusLabel(fallbackStatus)}</span>`;
+}
+
+async function addAircraft() {
+  if (!isAdmin) return;
+  const reg = prompt(t('Matrícula (ej. IF-XXXX)', 'Registration (e.g. IF-XXXX)'));
+  if (!reg) return;
+  const { error } = await sb.from('fleet').upsert({ registration: reg.toUpperCase() }, { onConflict: 'registration' });
+  if (error) { showToast(error.message, true); return; }
+  showToast(t('Aeronave agregada', 'Aircraft added'));
+  loadFleet();
+}
+
+async function deleteAircraft(reg) {
+  if (!isAdmin) return;
+  if (!confirm(t(`¿Eliminar ${reg}?`, `Delete ${reg}?`))) return;
+  const { error } = await sb.from('fleet').delete().eq('registration', reg);
+  if (error) { showToast(error.message, true); return; }
+  showToast(t('Aeronave eliminada', 'Aircraft deleted'));
+  loadFleet();
+}
+
+function editFleet(idx) {
+  if (!isAdmin) return;
+  fleetCache[idx].editing = true;
+  renderFleet();
+}
+
+async function saveFleetEdit(idx) {
+  if (!isAdmin) return;
+  const ac = fleetCache[idx];
+  const manufacturer = document.getElementById('mfr_' + idx).value.trim();
+  const model = document.getElementById('mdl_' + idx).value.trim();
+  const usage = document.getElementById('use_' + idx).value;
+  const mtow = document.getElementById('mtow_' + idx).value;
+  const mlw = document.getElementById('mlw_' + idx).value;
+  const oew = document.getElementById('oew_' + idx).value;
+
+  const payload = {
+    registration: ac.registration,
+    manufacturer: manufacturer || null,
+    model: model || null,
+    usage_type: usage,
+    mtow_kg: mtow ? parseInt(mtow) : null,
+    mlw_kg: mlw ? parseInt(mlw) : null,
+    oew_kg: oew ? parseInt(oew) : null
+  };
+
+  const { error } = await sb.from('fleet').upsert(payload, { onConflict: 'registration' });
+  if (error) {
+    showToast('Error: ' + error.message, true);
+    return;
+  }
+
+  ac.manufacturer = manufacturer || '—';
+  ac.model = model || '—';
+  ac.usage = usage;
+  ac.mtow = mtow || '—';
+  ac.mlw = mlw || '—';
+  ac.oew = oew || '—';
+  ac.editing = false;
+  renderFleet();
+  showToast('Flota actualizada');
+}
+
+async function loadFleet() {
+  const debug = document.getElementById('fleetDebug');
+  const body = document.getElementById('fleetBody');
+
+  const { data: dbFleet, error } = await sb.from('fleet').select('*');
+  if (error) {
+    debug.textContent = 'Error: ' + error.message;
+    body.innerHTML = '<tr><td colspan="9" style="color:#ef4444">Error al cargar la flota</td></tr>';
+    return;
+  }
+
+  fleetCache = (dbFleet || []).map(f => {
+    const modelKey = (f.model || '').toUpperCase();
+    const defaults = modelWeights[modelKey] || {};
+    return {
+      registration: f.registration || '—',
+      manufacturer: f.manufacturer || '—',
+      model: f.model || '—',
+      usage: f.usage_type || '—',
+      mtow: f.mtow_kg || defaults.mtow || '—',
+      mlw: f.mlw_kg || defaults.mlw || '—',
+      oew: f.oew_kg || defaults.oew || '—',
+      status: f.status || 'available',
+      statusDisplay: f.status_display || '',
+      editing: false
+    };
+  });
+
+  debug.textContent = `${t('Aeronaves en la flota', 'Aircraft in fleet')}: ${fleetCache.length}`;
+  renderFleet();
+
+  if ((ifConnected && isMember) || isAdmin) {
+    const token = localStorage.getItem('if_access_token');
+    if (token) {
+      try {
+        const orgRes = await fetch('https://api.infiniteflight.com/public/v3/live/organizations', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const orgData = await safeJson(orgRes);
+        if (orgData.result && orgData.result.length) {
+          const orgId = orgData.result.find(o => o.id === VJG_ORG_ID)?.id || orgData.result[0].id;
+          const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${orgId}/aircraft`, {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const acData = await safeJson(acRes);
+          const aircraftList = acData.result || [];
+          aircraftStatusMap = {};
+          aircraftList.forEach(ac => {
+            const reg = (ac.registration || '').toUpperCase();
+            let st = 'available';
+            if (ac.isFlying) st = 'flying';
+            else if (ac.visibility === 0) st = 'hangar';
+            else st = 'on_ground';
+            aircraftStatusMap[reg] = st;
+          });
+          renderFleet();
+        }
+      } catch(e) {}
+    }
+  }
+}
+
+
+function statusTicker(text, isActive) {
+  const cls = isActive ? '' : 'completed';
+  return `<div class="status-ticker ${cls}"><span>${text}</span></div>`;
+}
+
+function formatEta(utcStr) {
+  if (!utcStr) return '—';
+  const d = new Date(utcStr);
+  const utc = d.toISOString().slice(11, 16) + ' UTC';
+  const local = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${utc} / ${local}`;
+}
+
+async function loadAgent() {
+  const statusEl = document.getElementById('agentStatus');
+  const resultEl = document.getElementById('agentResult');
+  const btn = document.getElementById('agentBtn');
+  btn.disabled = true;
+  if (!document.getElementById('agentBody').innerHTML) statusEl.textContent = 'Consultando…';
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight primero';
+    btn.disabled = false;
+    return;
+  }
+  try {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (acRes.status === 401) {
+      const refresh = localStorage.getItem('if_refresh_token');
+      if (refresh) {
+        try {
+          const r = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV' })
+          });
+          const d = await r.json();
+          if (d.access_token) {
+            localStorage.setItem('if_access_token', d.access_token);
+            if (d.refresh_token) localStorage.setItem('if_refresh_token', d.refresh_token);
+            statusEl.textContent = 'Sesión renovada. Actualiza.';
+            btn.disabled = false;
+            return;
+          }
+        } catch(e) {}
+      }
+      throw new Error('Sesión expirada. Reconecta con IF.');
+    }
+    if (acRes.status === 429) throw new Error('Demasiadas consultas. Espera un momento.');
+    if (!acRes.ok) throw new Error('Error de conexión (' + acRes.status + ')');
+    const acData = await acRes.json();
+    const aircraft = acData.result || [];
+    const rows = [];
+    const alerts = [];
+    for (const ac of aircraft.slice(0, 8)) {
+      await new Promise(r => setTimeout(r, 300));
+      let pos = null;
+      try {
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const posData = await posRes.json();
+        pos = posData.result || null;
+      } catch(e) {}
+      const alt = pos?.altitude || 0;
+      const spd = pos?.speed || 0;
+      const vs = pos?.verticalSpeed || 0;
+      const onGround = pos && (alt < 500 || spd < 30);
+      let status = 'Sin datos';
+      if (pos) {
+        if (onGround) status = 'En tierra';
+        else if (alt < 10000 && vs > 200) status = 'Despegando';
+        else if (alt < 10000 && vs < -200) status = 'Aterrizando';
+        else status = 'En vuelo';
+      }
+      if (onGround) alerts.push(ac.registration || '—');
+      let place = '—';
+      if (pos && pos.latitude && pos.longitude) {
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0' }
+          });
+          const geo = await geoRes.json();
+          const addr = geo.address || {};
+          place = addr.country || addr.state || addr.region || '—';
+          if (place !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + place;
+        } catch(e) {}
+      }
+      let eta = '—';
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        const items = (flData.result && flData.result.items) || [];
+        if (items.length) {
+          const f = items[0];
+          if (onGround && f.actualArrivalUtc) {
+            eta = 'Aterrizó ' + formatEta(f.actualArrivalUtc);
+          } else if (!onGround && (f.estimatedArrivalUtc || f.eta)) {
+            eta = 'ETA ' + formatEta(f.estimatedArrivalUtc || f.eta);
+          }
+        }
+      } catch(e) {}
+      rows.push({
+        registration: ac.registration || '—',
+        status,
+        place,
+        alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—',
+        eta
+      });
+    }
+    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
+    const alertEl = document.getElementById('agentAlerts');
+    alertEl.innerHTML = alerts.length
+      ? `<div style="background:#2a1a1a;border:1px solid var(--red);padding:10px;border-radius:8px;font-size:13px">En tierra: ${alerts.join(', ')}</div>`
+      : '';
+    document.getElementById('agentBody').innerHTML = rows.map(r => `
+      <tr>
+        <td><a class="reg-link">${r.registration}</a></td>
+        <td>${r.status === 'En vuelo' ? '<span class="status-ticker"><span>EN VUELO</span></span>' : r.status}</td>
+        <td>${r.place}</td>
+        <td>${r.alt}</td>
+        <td>${r.spd}</td>
+        <td>${r.eta}</td>
+      </tr>`).join('');
+    resultEl.style.display = 'block';
+    statusEl.textContent = 'Listo';
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+async function loadAgent() {
+  const statusEl = document.getElementById('agentStatus');
+  const resultEl = document.getElementById('agentResult');
+  const btn = document.getElementById('agentBtn');
+  btn.disabled = true;
+  if (!document.getElementById('agentBody').innerHTML) statusEl.textContent = 'Consultando…';
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight primero';
+    btn.disabled = false;
+    return;
+  }
+  try {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (acRes.status === 401) {
+      const refresh = localStorage.getItem('if_refresh_token');
+      if (refresh) {
+        try {
+          const r = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV' })
+          });
+          const d = await r.json();
+          if (d.access_token) {
+            localStorage.setItem('if_access_token', d.access_token);
+            if (d.refresh_token) localStorage.setItem('if_refresh_token', d.refresh_token);
+            statusEl.textContent = 'Sesión renovada. Actualiza.';
+            btn.disabled = false;
+            return;
+          }
+        } catch(e) {}
+      }
+      throw new Error('Sesión expirada. Reconecta con IF.');
+    }
+    if (acRes.status === 429) throw new Error('Demasiadas consultas. Espera un momento.');
+    if (!acRes.ok) throw new Error('Error de conexión (' + acRes.status + ')');
+    const acData = await acRes.json();
+    const aircraft = acData.result || [];
+    const rows = [];
+    const alerts = [];
+    for (const ac of aircraft.slice(0, 8)) {
+      await new Promise(r => setTimeout(r, 300));
+      let pos = null;
+      try {
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const posData = await posRes.json();
+        pos = posData.result || null;
+      } catch(e) {}
+      const alt = pos?.altitude || 0;
+      const spd = pos?.speed || 0;
+      const vs = pos?.verticalSpeed || 0;
+      const onGround = pos && (alt < 500 || spd < 30);
+      let status = 'Sin datos';
+      if (pos) {
+        if (onGround) status = 'En tierra';
+        else if (alt < 10000 && vs > 200) status = 'Despegando';
+        else if (alt < 10000 && vs < -200) status = 'Aterrizando';
+        else status = 'En vuelo';
+      }
+      if (onGround) alerts.push(ac.registration || '—');
+      let place = '—';
+      if (pos && pos.latitude && pos.longitude) {
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0' }
+          });
+          const geo = await geoRes.json();
+          const addr = geo.address || {};
+          place = addr.country || addr.state || addr.region || '—';
+          if (place !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + place;
+        } catch(e) {}
+      }
+      let eta = '—';
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        const items = (flData.result && flData.result.items) || [];
+        if (items.length) {
+          const f = items[0];
+          if (onGround && f.actualArrivalUtc) {
+            eta = 'Aterrizó ' + formatEta(f.actualArrivalUtc);
+          } else if (!onGround && (f.estimatedArrivalUtc || f.eta)) {
+            eta = 'ETA ' + formatEta(f.estimatedArrivalUtc || f.eta);
+          }
+        }
+      } catch(e) {}
+      rows.push({
+        registration: ac.registration || '—',
+        status,
+        place,
+        alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—',
+        eta
+      });
+    }
+    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
+    const alertEl = document.getElementById('agentAlerts');
+    alertEl.innerHTML = alerts.length
+      ? `<div style="background:#2a1a1a;border:1px solid var(--red);padding:10px;border-radius:8px;font-size:13px">En tierra: ${alerts.join(', ')}</div>`
+      : '';
+    document.getElementById('agentBody').innerHTML = rows.map(r => `
+      <tr>
+        <td><a class="reg-link">${r.registration}</a></td>
+        <td>${r.status === 'En vuelo' ? '<span class="status-ticker"><span>EN VUELO</span></span>' : r.status}</td>
+        <td>${r.place}</td>
+        <td>${r.alt}</td>
+        <td>${r.spd}</td>
+        <td>${r.eta}</td>
+      </tr>`).join('');
+    resultEl.style.display = 'block';
+    statusEl.textContent = 'Listo';
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+async function loadBitacora() {
+  const statusEl = document.getElementById('statusTextBit');
+  const ifDebug = document.getElementById('ifDebug');
+  const body = document.getElementById('ifFlightsBody');
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight';
+    return;
+  }
+  statusEl.textContent = 'Cargando…';
+  try {
+    const [acRes, schRes] = await Promise.all([
+      fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+        headers: { Authorization: 'Bearer ' + token }
+      }),
+      fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+        headers: { Authorization: 'Bearer ' + token }
+      })
+    ]);
+    const acData = await acRes.json();
+    const schData = await schRes.json();
+    const aircraft = acData.result || [];
+    const schedules = schData.result || [];
+    const acMap = {};
+    aircraft.forEach(a => { acMap[a.id] = a; });
+    const { data: dbFleet } = await sb.from('fleet').select('*');
+    const dbMap = {};
+    (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
+    const allFlights = schedules.map(s => {
+      const ac = acMap[s.aircraftId] || {};
+      const reg = ac.registration || '—';
+      const db = dbMap[reg.toUpperCase()] || {};
+      const isActive = !s.actualArrivalUtc && s.actualDepartureUtc;
+      return {
+        date: s.actualDepartureUtc || s.scheduledDepartureUtc,
+        avion: db.model || db.manufacturer || '—',
+        registration: reg,
+        origin: s.originIcao || '?',
+        dest: s.destinationIcao || '…',
+        usage: db.usage_type || '—',
+        statusText: isActive ? 'EN VUELO' : (s.actualArrivalUtc ? 'Completado' : 'Programado'),
+        pilot: (s.crew && s.crew.length) ? s.crew.map(c => c.username).join(', ') : '—',
+        isActive
+      };
+    }).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    ifFlightsCache = allFlights;
+    ifDebug.textContent = allFlights.length + ' vuelos';
+    statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
+    body.innerHTML = allFlights.map(f => `
+      <tr style="${f.isActive ? 'background:#14372c' : ''}">
+        <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
+        <td>${f.avion}</td>
+        <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration}</a></td>
+        <td>${f.origin} → ${f.dest}</td>
+        <td>${f.usage}</td>
+        <td>${f.statusText === 'EN VUELO' ? '<div class="status-ticker"><span>EN VUELO</span></div>' : f.statusText}</td>
+        <td>${f.pilot}</td>
+      </tr>`).join('');
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function loadAgent() {
+  const statusEl = document.getElementById('agentStatus');
+  const resultEl = document.getElementById('agentResult');
+  const btn = document.getElementById('agentBtn');
+  btn.disabled = true;
+  if (!document.getElementById('agentBody').innerHTML) statusEl.textContent = 'Consultando…';
+  const token = localStorage.getItem('if_access_token');
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight primero';
+    btn.disabled = false;
+    return;
+  }
+  try {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (acRes.status === 401) {
+      const refresh = localStorage.getItem('if_refresh_token');
+      if (refresh) {
+        try {
+          const r = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV' })
+          });
+          const d = await r.json();
+          if (d.access_token) {
+            localStorage.setItem('if_access_token', d.access_token);
+            if (d.refresh_token) localStorage.setItem('if_refresh_token', d.refresh_token);
+            statusEl.textContent = 'Sesión renovada. Actualiza.';
+            btn.disabled = false;
+            return;
+          }
+        } catch(e) {}
+      }
+      throw new Error('Sesión expirada. Reconecta con IF.');
+    }
+    if (acRes.status === 429) throw new Error('Demasiadas consultas. Espera un momento.');
+    if (!acRes.ok) throw new Error('Error de conexión (' + acRes.status + ')');
+    const acData = await acRes.json();
+    const aircraft = acData.result || [];
+    const rows = [];
+    const alerts = [];
+    for (const ac of aircraft.slice(0, 8)) {
+      await new Promise(r => setTimeout(r, 300));
+      let pos = null;
+      try {
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const posData = await posRes.json();
+        pos = posData.result || null;
+      } catch(e) {}
+      const alt = pos?.altitude || 0;
+      const spd = pos?.speed || 0;
+      const vs = pos?.verticalSpeed || 0;
+      const onGround = pos && (alt < 500 || spd < 30);
+      let status = 'Sin datos';
+      if (pos) {
+        if (onGround) status = 'En tierra';
+        else if (alt < 10000 && vs > 200) status = 'Despegando';
+        else if (alt < 10000 && vs < -200) status = 'Aterrizando';
+        else status = 'En vuelo';
+      }
+      if (onGround) alerts.push(ac.registration || '—');
+      let place = '—';
+      if (pos && pos.latitude && pos.longitude) {
+        try {
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0' }
+          });
+          const geo = await geoRes.json();
+          const addr = geo.address || {};
+          place = addr.country || addr.state || addr.region || '—';
+          if (place !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + place;
+        } catch(e) {}
+      }
+      let eta = '—';
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        const items = (flData.result && flData.result.items) || [];
+        if (items.length) {
+          const f = items[0];
+          if (onGround && f.actualArrivalUtc) {
+            eta = 'Aterrizó ' + formatEta(f.actualArrivalUtc);
+          } else if (!onGround && (f.estimatedArrivalUtc || f.eta)) {
+            eta = 'ETA ' + formatEta(f.estimatedArrivalUtc || f.eta);
+          }
+        }
+      } catch(e) {}
+      rows.push({
+        registration: ac.registration || '—',
+        status,
+        place,
+        alt: pos?.altitude ? Math.round(pos.altitude) + ' ft' : '—',
+        spd: pos?.speed ? Math.round(pos.speed) + ' kt' : '—',
+        eta
+      });
+    }
+    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
+    const alertEl = document.getElementById('agentAlerts');
+    alertEl.innerHTML = alerts.length
+      ? `<div style="background:#2a1a1a;border:1px solid var(--red);padding:10px;border-radius:8px;font-size:13px">En tierra: ${alerts.join(', ')}</div>`
+      : '';
+    document.getElementById('agentBody').innerHTML = rows.map(r => `
+      <tr>
+        <td><a class="reg-link">${r.registration}</a></td>
+        <td>${r.status === 'En vuelo' ? '<span class="status-ticker"><span>EN VUELO</span></span>' : r.status}</td>
+        <td>${r.place}</td>
+        <td>${r.alt}</td>
+        <td>${r.spd}</td>
+        <td>${r.eta}</td>
+      </tr>`).join('');
+    resultEl.style.display = 'block';
+    statusEl.textContent = 'Listo';
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+async function loadBitacora() {
+  const statusEl = document.getElementById('statusTextBit');
+  const ifDebug = document.getElementById('ifDebug');
+  const body = document.getElementById('ifFlightsBody');
+  const token = localStorage.getItem('if_access_token');
+
+  statusEl.textContent = 'Cargando vuelos...';
+  body.innerHTML = '<tr><td colspan="7" style="text-align:center">Cargando...</td></tr>';
+
+  if (!token) {
+    statusEl.textContent = 'Conecta con Infinite Flight para ver los vuelos';
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center"><button class="btn primary" onclick="startIFLogin()">Conectar con Infinite Flight</button></td></tr>';
+    return;
+  }
+
+  try {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const acData = await acRes.json();
+    const aircraftList = acData.result || [];
+
+    const { data: dbFleet } = await sb.from('fleet').select('*');
+    const dbMap = {};
+    (dbFleet || []).forEach(f => { dbMap[(f.registration || '').toUpperCase()] = f; });
+
+    const allFlights = [];
+    for (const ac of aircraftList) {
+      const reg = ac.registration || '—';
+      const db = dbMap[reg.toUpperCase()] || {};
+      try {
+        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=30`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const flData = await flRes.json();
+        if (flData.result && flData.result.items) {
+          for (const f of flData.result.items) {
+            const origin = f.originIcao || '?';
+            const dest = f.destinationIcao || '…';
+            const pilot = (f.crew && f.crew.length) ? f.crew.map(c => c.username || c.name).filter(Boolean).join(', ') : '—';
+            const isActive = !f.actualArrivalUtc;
+            let statusText = 'Completado';
+            if (isActive) {
+              statusText = 'EN VUELO';
+            } else if (f.flightTimeMinutes) {
+              const h = Math.floor(f.flightTimeMinutes / 60);
+              const m = Math.round(f.flightTimeMinutes % 60);
+              statusText = `Completado · ${h}h ${m}min`;
+            }
+            allFlights.push({
+              date: f.actualDepartureUtc,
+              avion: db.model || db.manufacturer || '—',
+              registration: reg,
+              origin,
+              dest,
+              usage: db.usage_type || '—',
+              statusText,
+              pilot,
+              isActive,
+              flightTimeMinutes: f.flightTimeMinutes
+            });
+          }
+        }
+      } catch(e) {}
+    }
+
+    allFlights.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    ifFlightsCache = allFlights;
+    ifDebug.textContent = allFlights.length + ' vuelos';
+    statusEl.textContent = 'Vuelos de Infinite Flight — VistaJet Group';
+
+    body.innerHTML = allFlights.slice(0, 80).map(f => `
+      <tr style="${f.isActive ? 'background:#14372c' : ''}">
+        <td>${f.date ? new Date(f.date).toLocaleDateString() : '—'}</td>
+        <td>${f.avion}</td>
+        <td><a class="reg-link" onclick="showHistory('${f.registration}')">${f.registration}</a></td>
+        <td>${f.origin} → ${f.dest}</td>
+        <td>${f.usage}</td>
+        <td>${f.statusText === 'EN VUELO' ? '<div class="status-ticker"><span>EN VUELO</span></div>' : f.statusText}</td>
+        <td>${f.pilot}</td>
+      </tr>`).join('');
+  } catch(e) {
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+sb.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    currentUser = session.user;
+    isAdmin = await checkAdmin();
+    document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
+    document.getElementById('loginBtn').onclick = logout;
+  }
+  await restoreIFSession();
+});
+handleIFCallback();
+
+// ===== RUTAS MAP (mejorado) =====
+let routesMap = null;
+const airportCache = {};
+
+async function getAirportCoords(icao) {
+  if (!icao) return null;
+  const code = icao.toUpperCase();
+  if (airportCache[code]) return airportCache[code];
+
+  // Fallback static for common ones
+  const staticCoords = {
+    'MMLO': [21.266, -101.686], 'MMMX': [19.436, -99.072],
+    'KLAX': [33.942, -118.408], 'EGLL': [51.470, -0.454],
+    'WSSS': [1.364, 103.991], 'VHHH': [22.308, 113.918],
+    'YSSY': [-33.946, 151.177], 'KJFK': [40.640, -73.779],
+    'LFPG': [49.009, 2.548], 'EDDF': [50.037, 8.562]
+  };
+  if (staticCoords[code]) {
+    airportCache[code] = staticCoords[code];
+    return staticCoords[code];
+  }
+
+  // Try public API (OurAirports via a simple proxy or direct)
+  try {
+    const res = await fetch(`https://api.ourairports.com/v1/airports?icao=${code}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.latitude_deg && data.longitude_deg) {
+        const coords = [parseFloat(data.latitude_deg), parseFloat(data.longitude_deg)];
+        airportCache[code] = coords;
+        return coords;
+      }
+    }
+  } catch(e) {}
+
+  return null;
+}
+
+async function loadRoutesMap() {
+  const statusEl = document.getElementById('routesStatus');
+  const mapEl = document.getElementById('routesMap');
+  if (!mapEl) return;
+
+  if (!routesMap) {
+    routesMap = L.map('routesMap', { dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false }).setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 19
+    }).addTo(routesMap);
+  }
+
+  routesMap.eachLayer(layer => {
+    if (layer instanceof L.Polyline) routesMap.removeLayer(layer);
+  });
+
+  statusEl.textContent = '';
+
+  const token = localStorage.getItem('if_access_token');
+  let routes = [];
+
+  if (token) {
+    try {
+      const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (schRes.ok) {
+        const schData = await schRes.json();
+        const schedules = schData.result || [];
+        routes = schedules
+          .filter(s => s.originIcao && s.destinationIcao && s.originIcao !== s.destinationIcao)
+          .map(s => ({
+            origin: s.originIcao,
+            destination: s.destinationIcao,
+            flight_number: s.flightNumber || 'VJT'
+          }));
+      }
+    } catch (e) {
+      console.warn('IF error', e);
+    }
+  }
+
+  if (routes.length === 0) {
+    statusEl.textContent = token ? '' : '';
+    return;
+  }
+
+  let drawn = 0;
+  for (const r of routes) {
+    try {
+      const orig = await getAirportCoords(r.origin);
+      const dest = await getAirportCoords(r.destination);
+      if (orig && dest) {
+        L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.8 })
+          .bindPopup(`<b>${r.flight_number}</b><br>${r.origin} → ${r.destination}`)
+          .addTo(routesMap);
+        drawn++;
+      }
+    } catch (e) {}
+  }
+
+  statusEl.textContent = drawn > 0 ? drawn + ' rutas' : '';
+}
+// Hook into showView
+const _originalShowView = showView;
+showView = function(name) {
+  _originalShowView(name);
+  if (name === 'routes') setTimeout(loadRoutesMap, 150);
+};
+
+</script>
 </body>
 </html>
