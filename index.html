@@ -1782,34 +1782,61 @@ async function loadRoutesMap() {
     }).addTo(routesMap);
   }
 
-  // Clear previous layers
+  // Clear previous polylines
   routesMap.eachLayer(layer => {
     if (layer instanceof L.Polyline) routesMap.removeLayer(layer);
   });
 
   statusEl.textContent = 'Cargando rutas...';
 
-  const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category, flight_date').limit(200);
+  const token = localStorage.getItem('if_access_token');
+  let routes = [];
 
-  if (error) {
-    statusEl.textContent = 'Error al cargar vuelos: ' + (error.message || 'sin permisos o tabla vacía');
-    console.error(error);
+  // 1. Try Infinite Flight API first (same source as Bitácora)
+  if (token) {
+    try {
+      const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const schData = await schRes.json();
+      const schedules = schData.result || [];
+      routes = schedules
+        .filter(s => s.originIcao && s.destinationIcao)
+        .map(s => ({
+          origin: s.originIcao,
+          destination: s.destinationIcao,
+          flight_number: s.flightNumber || 'VJT',
+          registration: '',
+          category: ''
+        }));
+      statusEl.textContent = `Cargando ${routes.length} rutas desde Infinite Flight...`;
+    } catch (e) {
+      console.warn('IF API error', e);
+    }
+  }
+
+  // 2. Fallback to Supabase flights table
+  if (routes.length === 0) {
+    const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category').limit(200);
+    if (!error && flights) {
+      routes = flights.filter(f => f.origin && f.destination);
+    }
+  }
+
+  if (routes.length === 0) {
+    statusEl.textContent = token
+      ? 'No se encontraron vuelos con origen y destino. Revisa la bitácora.'
+      : 'Inicia sesión con Infinite Flight para ver las rutas de la bitácora.';
     return;
   }
-  if (!flights || flights.length === 0) {
-    statusEl.textContent = 'No hay vuelos en la tabla flights. Registra vuelos en la bitácora para verlos aquí.';
-    return;
-  }
 
-  const routes = flights.filter(f => f.origin && f.destination);
   let drawn = 0;
-
   for (const r of routes) {
     const orig = await getAirportCoords(r.origin);
     const dest = await getAirportCoords(r.destination);
     if (orig && dest) {
       L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.75 })
-        .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}<br>${r.registration || ''} · ${r.category || ''}`)
+        .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}`)
         .addTo(routesMap);
       drawn++;
     }
