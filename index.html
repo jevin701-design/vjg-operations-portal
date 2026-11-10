@@ -763,6 +763,8 @@ async function handleIFCallback(){
       ifConnected = true;
       currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
       document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
       document.getElementById('loginBtn').onclick = logout;
       const isVjg = await checkVjgMembership();
       if (isVjg || isAdmin) {
@@ -852,6 +854,8 @@ async function login() {
     return;
   }
   document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
   document.getElementById('loginBtn').onclick = logout;
   document.getElementById('adminNav').style.display = 'inline-block';
   showToast('Sesión iniciada — Administrador');
@@ -904,6 +908,8 @@ async function logout() {
   isAdmin = false;
   ifConnected = false;
   document.getElementById('loginBtn').textContent = t('Iniciar sesión', 'Sign in');
+  document.getElementById('loginBtn').classList.remove('red');
+  document.getElementById('loginBtn').classList.add('green');
   document.getElementById('loginBtn').onclick = () => showView('login');
   document.getElementById('adminNav').style.display = 'none';
   document.getElementById('notMember').classList.add('hidden');
@@ -917,6 +923,8 @@ async function restoreIFSession() {
     ifConnected = true;
     currentUser = currentUser || { id: 'if_user', email: 'infiniteflight@user' };
     document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
     document.getElementById('loginBtn').onclick = logout;
     isMember = await checkVjgMembership() || isAdmin;
   }
@@ -1725,6 +1733,8 @@ sb.auth.getSession().then(async ({ data: { session } }) => {
     currentUser = session.user;
     isAdmin = await checkAdmin();
     document.getElementById('loginBtn').textContent = t('Salir', 'Logout');
+  document.getElementById('loginBtn').classList.remove('green');
+  document.getElementById('loginBtn').classList.add('red');
     document.getElementById('loginBtn').onclick = logout;
   }
   await restoreIFSession();
