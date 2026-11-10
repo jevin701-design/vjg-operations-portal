@@ -1776,9 +1776,9 @@ async function loadRoutesMap() {
 
   if (!routesMap) {
     routesMap = L.map('routesMap').setView([20, 0], 2);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      maxZoom: 18
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
     }).addTo(routesMap);
   }
 
@@ -1791,8 +1791,13 @@ async function loadRoutesMap() {
 
   const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category, flight_date').limit(200);
 
-  if (error || !flights || flights.length === 0) {
-    statusEl.textContent = 'No se encontraron vuelos en la bitácora.';
+  if (error) {
+    statusEl.textContent = 'Error al cargar vuelos: ' + (error.message || 'sin permisos o tabla vacía');
+    console.error(error);
+    return;
+  }
+  if (!flights || flights.length === 0) {
+    statusEl.textContent = 'No hay vuelos en la tabla flights. Registra vuelos en la bitácora para verlos aquí.';
     return;
   }
 
