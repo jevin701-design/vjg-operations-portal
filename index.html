@@ -688,7 +688,7 @@ function showView(name) {
   if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
   if (name === 'fleet') {
     loadAgent();
-    agentTimer = setInterval(loadAgent, 15000);
+    agentTimer = setInterval(loadAgent, 10000);
   }
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const link = document.querySelector(`nav a[data-view="${name}"]`);
@@ -1259,8 +1259,8 @@ async function loadAgent() {
       await new Promise(r => setTimeout(r, 300));
       let pos = null;
       try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?t=${Date.now()}`, {
-          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?_=${Date.now()}`, {
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
