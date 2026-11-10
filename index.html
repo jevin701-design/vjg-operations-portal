@@ -4,7 +4,81 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VistaJet Group</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ===== RUTAS MAP =====
+let routesMap = null;
+
+async function loadRoutesMap() {
+  const statusEl = document.getElementById('routesStatus');
+  const mapEl = document.getElementById('routesMap');
+  if (!mapEl) return;
+
+  if (!routesMap) {
+    routesMap = L.map('routesMap').setView([20, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      maxZoom: 18
+    }).addTo(routesMap);
+  }
+
+  statusEl.textContent = 'Cargando rutas...';
+
+  // Try Supabase first
+  const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category, flight_date').limit(100);
+  
+  let routes = [];
+  if (!error && flights && flights.length > 0) {
+    routes = flights.filter(f => f.origin && f.destination);
+    statusEl.textContent = `Mostrando ${routes.length} rutas de la bitácora.`;
+  } else {
+    statusEl.textContent = 'No se encontraron vuelos en la bitácora. Conecta con Infinite Flight o registra vuelos.';
+    return;
+  }
+
+  // Simple airport coordinate cache (expand as needed)
+  const airportCoords = {
+    'MMLO': [21.266, -101.686],
+    'MMMX': [19.436, -99.072],
+    'KLAX': [33.942, -118.408],
+    'EGLL': [51.470, -0.454],
+    'WSSS': [1.364, 103.991],
+    'VHHH': [22.308, 113.918],
+    'YSSY': [-33.946, 151.177],
+    'KJFK': [40.640, -73.779],
+    'LFPG': [49.009, 2.548],
+    'EDDF': [50.037, 8.562],
+    'OMDB': [25.253, 55.365],
+    'ZBAA': [40.080, 116.585],
+    'RJTT': [35.552, 139.780],
+    'KSFO': [37.619, -122.375],
+    'KORD': [41.978, -87.905]
+  };
+
+  routes.forEach(r => {
+    const orig = airportCoords[(r.origin || '').toUpperCase()];
+    const dest = airportCoords[(r.destination || '').toUpperCase()];
+    if (orig && dest) {
+      L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.7 })
+        .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}<br>${r.registration || ''} · ${r.category || ''}`)
+        .addTo(routesMap);
+    }
+  });
+
+  if (routes.length > 0) {
+    statusEl.textContent = `Mostrando ${routes.length} rutas. Haz clic en una línea para ver detalles.`;
+  }
+}
+
+// Call when routes view is shown
+const originalShowView = showView;
+showView = function(name) {
+  originalShowView(name);
+  if (name === 'routes') {
+    setTimeout(loadRoutesMap, 100);
+  }
+};
+
+</script>
 <style>
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
@@ -191,6 +265,8 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
   .responsive-img { max-height: 480px; object-fit: cover; }
 }
 </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <div class="left-bar"></div>
@@ -434,7 +510,9 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     <section class="section">
       <div class="eyebrow" data-es="RUTAS" data-en="ROUTES">RUTAS</div>
       <h2 data-es="Rutas" data-en="Routes">Rutas</h2>
-      <p class="lead" data-es="Próximamente." data-en="Coming soon.">Próximamente.</p>
+      <p class="lead" data-es="VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora." data-en="VistaJet Group operates a flexible point-to-point model. This map shows routes flown according to flights registered in the logbook.">VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora.</p>
+      <div id="routesMap" style="height:480px;width:100%;border-radius:12px;margin-top:16px;background:#111"></div>
+      <p id="routesStatus" style="color:var(--muted);font-size:14px;margin-top:12px">Cargando rutas...</p>
     </section>
   </div>
 
