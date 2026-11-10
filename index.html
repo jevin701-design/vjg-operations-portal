@@ -439,7 +439,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <div class="eyebrow" data-es="RUTAS" data-en="ROUTES">RUTAS</div>
       <h2 data-es="Rutas" data-en="Routes">Rutas</h2>
       <p class="lead" data-es="VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora." data-en="VistaJet Group operates a flexible point-to-point model. This map shows routes flown according to flights registered in the logbook.">VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora.</p>
-      <div id="routesMap" style="height:480px;width:100%;border-radius:12px;margin-top:16px;background:#111"></div>
+      <div id="routesMap" style="height:55vh;min-height:280px;max-height:520px;width:100%;border-radius:12px;margin-top:16px;background:#111"></div>
       <p id="routesStatus" style="color:var(--muted);font-size:14px;margin-top:12px">Cargando rutas...</p>
     </section>
   </div>
@@ -1775,7 +1775,7 @@ async function loadRoutesMap() {
   if (!mapEl) return;
 
   if (!routesMap) {
-    routesMap = L.map('routesMap').setView([20, 0], 2);
+    routesMap = L.map('routesMap', { dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false }).setView([20, 0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap',
       maxZoom: 19
