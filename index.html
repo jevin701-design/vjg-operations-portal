@@ -276,12 +276,10 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <p data-es="En VJG eliges la aeronave, el destino, la ruta y el horario de salida, siempre respetando las capacidades de cada avión y las reglas operativas de la compañía. No trabajamos con redes de rutas fijas: el piloto decide el siguiente vuelo una vez en tierra." data-en="At VJG you choose the aircraft, destination, route, and departure time, while respecting each aircraft’s capabilities and the company’s operating rules. We do not rely on fixed route networks: the pilot decides the next flight once on the ground.">En VJG eliges la aeronave, el destino, la ruta y el horario de salida, siempre respetando las capacidades de cada avión y las reglas operativas de la compañía. No trabajamos con redes de rutas fijas: el piloto decide el siguiente vuelo una vez en tierra.</p>
       <h3 data-es="Nuestras divisiones" data-en="Our divisions">Nuestras divisiones</h3>
       <p data-es="Operamos tres divisiones bajo una misma red:" data-en="We operate three divisions under one integrated network:">Operamos tres divisiones bajo una misma red:</p>
-      <ul style="color:#c8102e">
-        <li data-es="<strong>Aviación privada</strong> (VJT 100–499): viajes privados y ejecutivos con total libertad de elección de aeronave y destino." data-en="<strong>Private Aviation</strong> (VJT 100–499): private and executive travel with full freedom to choose aircraft and destination."><strong>Aviación privada</strong> (VJT 100–499): viajes privados y ejecutivos con total libertad de elección de aeronave y destino.</li>
-        <li data-es="<strong>Operaciones de carga</strong> (VJT 500–899): transporte de carga entre centros logísticos e industriales." data-en="<strong>Cargo Operations</strong> (VJT 500–899): cargo transportation between logistics and industrial centers."><strong>Operaciones de carga</strong> (VJT 500–899): transporte de carga entre centros logísticos e industriales.</li>
-        <li data-es="<strong>Operaciones chárter</strong> (VJT 900–999): vuelos de pasajeros contratados para una misión o necesidad concreta." data-en="<strong>Charter Operations</strong> (VJT 900–999): passenger flights chartered for a specific mission or requirement."><strong>Operaciones chárter</strong> (VJT 900–999): vuelos de pasajeros contratados para una misión o necesidad concreta.</li>
-        <li data-es="<strong>Operaciones militares</strong> (próximamente)" data-en="<strong>Military Operations</strong> (coming soon)"><strong>Operaciones militares</strong> (próximamente)</li>
-        <li data-es="<strong>Operaciones gubernamentales</strong> (próximamente)" data-en="<strong>Governmental Operations</strong> (coming soon)"><strong>Operaciones gubernamentales</strong> (próximamente)</li>
+      <ul style="list-style:none;padding:0">
+        <li style="color:#c8102e;margin:6px 0">• Aviación privada</li>
+        <li style="color:#c8102e;margin:6px 0">• Operaciones de carga</li>
+        <li style="color:#c8102e;margin:6px 0">• Operaciones chárter</li>
       </ul>
       <h3 data-es="Clasificación regional y numeración de vuelos" data-en="Regional classification and flight numbering">Clasificación regional y numeración de vuelos</h3>
       <p data-es="VistaJet Group asigna los números de vuelo según la categoría operativa y la región del aeropuerto de salida. Cada número identifica un vuelo y no puede duplicarse entre rutas activas." data-en="VistaJet Group assigns flight numbers according to the operational category and the region of the departure airport. Each number identifies a flight and cannot be duplicated among active routes.">VistaJet Group asigna los números de vuelo según la categoría operativa y la región del aeropuerto de salida. Cada número identifica un vuelo y no puede duplicarse entre rutas activas.</p>
@@ -327,14 +325,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
           <p data-es="Estado: Vacante<br>Mantiene la imagen profesional de la VA y actualiza el sitio y los anuncios." data-en="Status: Vacant<br>Maintains the professional image of the VA and updates the site and announcements.">Estado: Vacante<br>Mantiene la imagen profesional de la VA y actualiza el sitio y los anuncios.</p>
         </div>
       </div>
-      <h3 data-es="¿Te interesa unirte al staff?" data-en="Interested in joining the staff?">¿Te interesa unirte al staff?</h3>
-      <p><a class="btn primary" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VJG" data-en="Join VJG">Únete a VJG</a></p>
-      <p data-es="Si deseas ocupar alguna de las posiciones vacantes, envía tu solicitud indicando el cargo que te interesa." data-en="If you wish to occupy one of the vacant positions, send your application indicating the role you are interested in.">Si deseas ocupar alguna de las posiciones vacantes, envía tu solicitud indicando el cargo que te interesa.</p>
-      <p data-es="Mensaje de ejemplo:<br>Hola, me interesa la posición de [Nombre del cargo].<br>Mi usuario de Infinite Flight: @______<br>Motivo / experiencia breve:" data-en="Example message:<br>Hello, I am interested in the position of [Role name].<br>My Infinite Flight username: @______<br>Reason / brief experience:">Mensaje de ejemplo:<br>Hola, me interesa la posición de [Nombre del cargo].<br>Mi usuario de Infinite Flight: @______<br>Motivo / experiencia breve:</p>
-    </section>
-  </div>
-
-  <div id="view-fleet" class="view">
+      <div id="view-fleet" class="view">
     <section class="section">
       <div class="eyebrow">03 · <span data-es="FLOTA" data-en="FLEET">FLOTA</span></div>
       <h2 data-es="Aeronaves para cada misión." data-en="Aircraft for Every Mission.">Aeronaves para cada misión.</h2>
@@ -1001,6 +992,8 @@ function showHistory(reg) {
 
   const flights = ifFlightsCache
     .filter(f => (f.registration || '').toUpperCase() === reg.toUpperCase())
+    .filter(f => !((f.origin||'').toUpperCase() === 'MMLO' && (f.dest||'').toUpperCase() === 'MMLO'))
+    .filter(f => !((f.origin||'').toUpperCase() === 'KPAE' && (f.dest||'').toUpperCase() === 'KPAE'))
     .sort((a, b) => new Date(b.date || b.actualDepartureUtc || 0) - new Date(a.date || a.actualDepartureUtc || 0));
 
   document.getElementById('historyBody').innerHTML = flights.length
@@ -1394,6 +1387,7 @@ async function loadBitacora() {
               const m = Math.round(f.flightTimeMinutes % 60);
               statusText = `Completado · ${h}h ${m}min`;
             }
+            if ((origin.toUpperCase() === 'MMLO' && dest.toUpperCase() === 'MMLO') || (origin.toUpperCase() === 'KPAE' && dest.toUpperCase() === 'KPAE')) continue;
             allFlights.push({
               date: f.actualDepartureUtc,
               avion: db.model || db.manufacturer || '—',
