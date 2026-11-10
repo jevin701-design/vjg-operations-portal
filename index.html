@@ -683,6 +683,9 @@ function showView(name) {
     loadAgent();
     agentTimer = setInterval(loadAgent, 10000);
   }
+  window.addEventListener('resize', () => {
+    if (document.getElementById('view-fleet')?.classList.contains('active')) loadAgent();
+  }, { once: false });
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const link = document.querySelector(`nav a[data-view="${name}"]`);
   if (link) link.classList.add('active');
