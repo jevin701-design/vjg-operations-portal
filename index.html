@@ -416,18 +416,11 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
 
     
     <h2 data-es="Ubicación real de flota" data-en="Real fleet location">Ubicación real de flota</h2>
-    
-    <button class="btn primary" id="agentBtn" onclick="loadAgent()">Cargar vuelos de VJG</button>
-    <div id="agentStatus" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
-    <div id="agentResult" style="margin-top:16px;display:none">
-      <div id="agentSummary" style="margin-bottom:12px"></div>
-      <div id="agentAlerts" style="margin-bottom:12px"></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th></tr></thead>
-          <tbody id="agentBody"></tbody>
-        </table>
-      </div>
+    <div class="table-wrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>Matrícula</th><th>Estado</th><th>Ubicación</th><th>Altitud</th><th>Velocidad</th><th>ETA</th></tr></thead>
+        <tbody id="agentBody"></tbody>
+      </table>
     </div>
   
   </section>
@@ -1213,54 +1206,23 @@ function formatEta(utcStr) {
 
 
 async function loadAgent() {
-  const statusEl = document.getElementById('agentStatus');
-  const resultEl = document.getElementById('agentResult');
-  const btn = document.getElementById('agentBtn');
-  btn.disabled = true;
-  if (!document.getElementById('agentBody').innerHTML) statusEl.textContent = 'Consultando…';
+  const body = document.getElementById('agentBody');
+  if (!body) return;
   const token = localStorage.getItem('if_access_token');
-  if (!token) {
-    statusEl.textContent = 'Conecta con Infinite Flight primero';
-    btn.disabled = false;
-    return;
-  }
+  if (!token) return;
   try {
-    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft`, {
-      headers: { Authorization: 'Bearer ' + token }
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft?_=${Date.now()}`, {
+      headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
     });
-    if (acRes.status === 401) {
-      const refresh = localStorage.getItem('if_refresh_token');
-      if (refresh) {
-        try {
-          const r = await fetch('https://api.infiniteflight.com/auth/v2/connect/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: 'ifc_u3T5ked03Tovv6YxIQihXr9czDu42LSV' })
-          });
-          const d = await r.json();
-          if (d.access_token) {
-            localStorage.setItem('if_access_token', d.access_token);
-            if (d.refresh_token) localStorage.setItem('if_refresh_token', d.refresh_token);
-            statusEl.textContent = 'Sesión renovada. Actualiza.';
-            btn.disabled = false;
-            return;
-          }
-        } catch(e) {}
-      }
-      throw new Error('Sesión expirada. Reconecta con IF.');
-    }
-    if (acRes.status === 429) throw new Error('Demasiadas consultas. Espera un momento.');
-    if (!acRes.ok) throw new Error('Error de conexión (' + acRes.status + ')');
+    if (!acRes.ok) return;
     const acData = await acRes.json();
     const aircraft = acData.result || [];
     const rows = [];
-    const alerts = [];
-    for (const ac of aircraft.slice(0, 8)) {
-      await new Promise(r => setTimeout(r, 300));
+    for (const ac of aircraft.slice(0, 6)) {
       let pos = null;
       try {
         const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?_=${Date.now()}`, {
-          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' }
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
@@ -1269,42 +1231,38 @@ async function loadAgent() {
       const spd = pos?.speed || 0;
       const vs = pos?.verticalSpeed || 0;
       const onGround = pos && (alt < 500 || spd < 30);
-      let status = 'Sin datos';
+      let status = '—';
       if (pos) {
         if (onGround) status = 'En tierra';
         else if (alt < 10000 && vs > 200) status = 'Despegando';
         else if (alt < 10000 && vs < -200) status = 'Aterrizando';
         else status = 'En vuelo';
       }
-      if (onGround) alerts.push(ac.registration || '—');
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5&t=${Date.now()}`, {
-            headers: { 'User-Agent': 'VJG-Portal/1.0', 'Cache-Control': 'no-cache' }
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5&_=${Date.now()}`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0' }
           });
           const geo = await geoRes.json();
-          const addr = geo.address || {};
-          place = addr.country || addr.state || addr.region || '—';
-          if (place !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + place;
+          const country = geo.address?.country || '—';
+          if (country !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + country;
         } catch(e) {}
       }
       let eta = '—';
-      try {
-        const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        const flData = await flRes.json();
-        const items = (flData.result && flData.result.items) || [];
-        if (items.length) {
-          const f = items[0];
-          if (onGround && f.actualArrivalUtc) {
-            eta = 'Aterrizó ' + formatEta(f.actualArrivalUtc);
-          } else if (!onGround && (f.estimatedArrivalUtc || f.eta)) {
-            eta = 'ETA ' + formatEta(f.estimatedArrivalUtc || f.eta);
+      if (!onGround) {
+        try {
+          const flRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/flights?pageSize=1`, {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const flData = await flRes.json();
+          const items = (flData.result && flData.result.items) || [];
+          if (items.length && items[0].estimatedArrivalUtc) {
+            const d = new Date(items[0].estimatedArrivalUtc);
+            eta = d.toISOString().slice(11, 16) + ' UTC / ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           }
-        }
-      } catch(e) {}
+        } catch(e) {}
+      }
       rows.push({
         registration: ac.registration || '—',
         status,
@@ -1314,12 +1272,7 @@ async function loadAgent() {
         eta
       });
     }
-    document.getElementById('agentSummary').textContent = `${aircraft.length} aeronaves en VJG`;
-    const alertEl = document.getElementById('agentAlerts');
-    alertEl.innerHTML = alerts.length
-      ? `<div style="background:#2a1a1a;border:1px solid var(--red);padding:10px;border-radius:8px;font-size:13px">En tierra: ${alerts.join(', ')}</div>`
-      : '';
-    document.getElementById('agentBody').innerHTML = rows.map(r => `
+    body.innerHTML = rows.map(r => `
       <tr>
         <td><a class="reg-link">${r.registration}</a></td>
         <td>${r.status === 'En vuelo' ? '<span class="status-ticker"><span>EN VUELO</span></span>' : r.status}</td>
@@ -1328,12 +1281,7 @@ async function loadAgent() {
         <td>${r.spd}</td>
         <td>${r.eta}</td>
       </tr>`).join('');
-    resultEl.style.display = 'block';
-    statusEl.textContent = 'Listo';
-  } catch(e) {
-    statusEl.textContent = 'Error: ' + e.message;
-  }
-  btn.disabled = false;
+  } catch(e) {}
 }
 
 async function loadBitacora() {
