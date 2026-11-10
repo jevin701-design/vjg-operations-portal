@@ -4,81 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VistaJet Group</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-// ===== RUTAS MAP =====
-let routesMap = null;
-
-async function loadRoutesMap() {
-  const statusEl = document.getElementById('routesStatus');
-  const mapEl = document.getElementById('routesMap');
-  if (!mapEl) return;
-
-  if (!routesMap) {
-    routesMap = L.map('routesMap').setView([20, 0], 2);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      maxZoom: 18
-    }).addTo(routesMap);
-  }
-
-  statusEl.textContent = 'Cargando rutas...';
-
-  // Try Supabase first
-  const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category, flight_date').limit(100);
-  
-  let routes = [];
-  if (!error && flights && flights.length > 0) {
-    routes = flights.filter(f => f.origin && f.destination);
-    statusEl.textContent = `Mostrando ${routes.length} rutas de la bitácora.`;
-  } else {
-    statusEl.textContent = 'No se encontraron vuelos en la bitácora. Conecta con Infinite Flight o registra vuelos.';
-    return;
-  }
-
-  // Simple airport coordinate cache (expand as needed)
-  const airportCoords = {
-    'MMLO': [21.266, -101.686],
-    'MMMX': [19.436, -99.072],
-    'KLAX': [33.942, -118.408],
-    'EGLL': [51.470, -0.454],
-    'WSSS': [1.364, 103.991],
-    'VHHH': [22.308, 113.918],
-    'YSSY': [-33.946, 151.177],
-    'KJFK': [40.640, -73.779],
-    'LFPG': [49.009, 2.548],
-    'EDDF': [50.037, 8.562],
-    'OMDB': [25.253, 55.365],
-    'ZBAA': [40.080, 116.585],
-    'RJTT': [35.552, 139.780],
-    'KSFO': [37.619, -122.375],
-    'KORD': [41.978, -87.905]
-  };
-
-  routes.forEach(r => {
-    const orig = airportCoords[(r.origin || '').toUpperCase()];
-    const dest = airportCoords[(r.destination || '').toUpperCase()];
-    if (orig && dest) {
-      L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.7 })
-        .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}<br>${r.registration || ''} · ${r.category || ''}`)
-        .addTo(routesMap);
-    }
-  });
-
-  if (routes.length > 0) {
-    statusEl.textContent = `Mostrando ${routes.length} rutas. Haz clic en una línea para ver detalles.`;
-  }
-}
-
-// Call when routes view is shown
-const originalShowView = showView;
-showView = function(name) {
-  originalShowView(name);
-  if (name === 'routes') {
-    setTimeout(loadRoutesMap, 100);
-  }
-};
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
@@ -1802,6 +1730,96 @@ sb.auth.getSession().then(async ({ data: { session } }) => {
   await restoreIFSession();
 });
 handleIFCallback();
+
+// ===== RUTAS MAP (mejorado) =====
+let routesMap = null;
+const airportCache = {};
+
+async function getAirportCoords(icao) {
+  if (!icao) return null;
+  const code = icao.toUpperCase();
+  if (airportCache[code]) return airportCache[code];
+
+  // Fallback static for common ones
+  const staticCoords = {
+    'MMLO': [21.266, -101.686], 'MMMX': [19.436, -99.072],
+    'KLAX': [33.942, -118.408], 'EGLL': [51.470, -0.454],
+    'WSSS': [1.364, 103.991], 'VHHH': [22.308, 113.918],
+    'YSSY': [-33.946, 151.177], 'KJFK': [40.640, -73.779],
+    'LFPG': [49.009, 2.548], 'EDDF': [50.037, 8.562]
+  };
+  if (staticCoords[code]) {
+    airportCache[code] = staticCoords[code];
+    return staticCoords[code];
+  }
+
+  // Try public API (OurAirports via a simple proxy or direct)
+  try {
+    const res = await fetch(`https://api.ourairports.com/v1/airports?icao=${code}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.latitude_deg && data.longitude_deg) {
+        const coords = [parseFloat(data.latitude_deg), parseFloat(data.longitude_deg)];
+        airportCache[code] = coords;
+        return coords;
+      }
+    }
+  } catch(e) {}
+
+  return null;
+}
+
+async function loadRoutesMap() {
+  const statusEl = document.getElementById('routesStatus');
+  const mapEl = document.getElementById('routesMap');
+  if (!mapEl) return;
+
+  if (!routesMap) {
+    routesMap = L.map('routesMap').setView([20, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      maxZoom: 18
+    }).addTo(routesMap);
+  }
+
+  // Clear previous layers
+  routesMap.eachLayer(layer => {
+    if (layer instanceof L.Polyline) routesMap.removeLayer(layer);
+  });
+
+  statusEl.textContent = 'Cargando rutas...';
+
+  const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category, flight_date').limit(200);
+
+  if (error || !flights || flights.length === 0) {
+    statusEl.textContent = 'No se encontraron vuelos en la bitácora.';
+    return;
+  }
+
+  const routes = flights.filter(f => f.origin && f.destination);
+  let drawn = 0;
+
+  for (const r of routes) {
+    const orig = await getAirportCoords(r.origin);
+    const dest = await getAirportCoords(r.destination);
+    if (orig && dest) {
+      L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.75 })
+        .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}<br>${r.registration || ''} · ${r.category || ''}`)
+        .addTo(routesMap);
+      drawn++;
+    }
+  }
+
+  statusEl.textContent = `Mostrando ${drawn} de ${routes.length} rutas. Haz clic en una línea para ver detalles.`;
+}
+
+// Hook into showView
+const _originalShowView = showView;
+showView = function(name) {
+  _originalShowView(name);
+  if (name === 'routes') setTimeout(loadRoutesMap, 150);
+};
+
 </script>
 </body>
 </html>
