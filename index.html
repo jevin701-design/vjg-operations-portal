@@ -1782,7 +1782,6 @@ async function loadRoutesMap() {
     }).addTo(routesMap);
   }
 
-  // Clear previous polylines
   routesMap.eachLayer(layer => {
     if (layer instanceof L.Polyline) routesMap.removeLayer(layer);
   });
@@ -1792,32 +1791,30 @@ async function loadRoutesMap() {
   const token = localStorage.getItem('if_access_token');
   let routes = [];
 
-  // 1. Try Infinite Flight API first (same source as Bitácora)
   if (token) {
     try {
       const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
         headers: { Authorization: 'Bearer ' + token }
       });
+      if (!schRes.ok) throw new Error('HTTP ' + schRes.status);
       const schData = await schRes.json();
       const schedules = schData.result || [];
+      console.log('IF schedules received:', schedules.length);
       routes = schedules
-        .filter(s => s.originIcao && s.destinationIcao)
+        .filter(s => s.originIcao && s.destinationIcao && s.originIcao !== s.destinationIcao)
         .map(s => ({
           origin: s.originIcao,
           destination: s.destinationIcao,
-          flight_number: s.flightNumber || 'VJT',
-          registration: '',
-          category: ''
+          flight_number: s.flightNumber || 'VJT'
         }));
-      statusEl.textContent = `Cargando ${routes.length} rutas desde Infinite Flight...`;
     } catch (e) {
-      console.warn('IF API error', e);
+      console.error('IF schedules error:', e);
+      statusEl.textContent = 'Error al consultar Infinite Flight. Intenta reconectar.';
     }
   }
 
-  // 2. Fallback to Supabase flights table
   if (routes.length === 0) {
-    const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category').limit(200);
+    const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination').limit(200);
     if (!error && flights) {
       routes = flights.filter(f => f.origin && f.destination);
     }
@@ -1825,26 +1822,32 @@ async function loadRoutesMap() {
 
   if (routes.length === 0) {
     statusEl.textContent = token
-      ? 'No se encontraron vuelos con origen y destino. Revisa la bitácora.'
-      : 'Inicia sesión con Infinite Flight para ver las rutas de la bitácora.';
+      ? 'No hay vuelos con origen y destino distintos en este momento. Revisa la bitácora.'
+      : 'Inicia sesión con Infinite Flight para cargar las rutas.';
     return;
   }
 
   let drawn = 0;
   for (const r of routes) {
-    const orig = await getAirportCoords(r.origin);
-    const dest = await getAirportCoords(r.destination);
-    if (orig && dest) {
-      L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.75 })
-        .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}`)
-        .addTo(routesMap);
-      drawn++;
+    try {
+      const orig = await getAirportCoords(r.origin);
+      const dest = await getAirportCoords(r.destination);
+      if (orig && dest) {
+        L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.75 })
+          .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}`)
+          .addTo(routesMap);
+        drawn++;
+      }
+    } catch (e) {
+      console.warn('Route skip', r.origin, r.destination, e);
     }
   }
 
-  statusEl.textContent = `Mostrando ${drawn} de ${routes.length} rutas. Haz clic en una línea para ver detalles.`;
+  statusEl.textContent = `Mostrando ${drawn} de ${routes.length} rutas.`;
+  if (drawn === 0 && routes.length > 0) {
+    statusEl.textContent += ' (No se pudieron resolver coordenadas de los aeropuertos)';
+  }
 }
-
 // Hook into showView
 const _originalShowView = showView;
 showView = function(name) {
