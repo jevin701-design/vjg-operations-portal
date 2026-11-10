@@ -45,9 +45,12 @@ header {
 .brand span { color: var(--red); }
 .brand img {
   height: 46px;
-  width: auto;
+  width: 46px;
+  border-radius: 50%;
+  object-fit: cover;
   vertical-align: middle;
   margin-right: 12px;
+  border: 2px solid var(--red);
 }
 @media (max-width: 700px) {
   .brand img { height: 38px; margin-right: 10px; }
@@ -273,7 +276,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
       <p data-es="En VJG eliges la aeronave, el destino, la ruta y el horario de salida, siempre respetando las capacidades de cada avión y las reglas operativas de la compañía. No trabajamos con redes de rutas fijas: el piloto decide el siguiente vuelo una vez en tierra." data-en="At VJG you choose the aircraft, destination, route, and departure time, while respecting each aircraft’s capabilities and the company’s operating rules. We do not rely on fixed route networks: the pilot decides the next flight once on the ground.">En VJG eliges la aeronave, el destino, la ruta y el horario de salida, siempre respetando las capacidades de cada avión y las reglas operativas de la compañía. No trabajamos con redes de rutas fijas: el piloto decide el siguiente vuelo una vez en tierra.</p>
       <h3 data-es="Nuestras divisiones" data-en="Our divisions">Nuestras divisiones</h3>
       <p data-es="Operamos tres divisiones bajo una misma red:" data-en="We operate three divisions under one integrated network:">Operamos tres divisiones bajo una misma red:</p>
-      <ul>
+      <ul style="color:#c8102e">
         <li data-es="<strong>Aviación privada</strong> (VJT 100–499): viajes privados y ejecutivos con total libertad de elección de aeronave y destino." data-en="<strong>Private Aviation</strong> (VJT 100–499): private and executive travel with full freedom to choose aircraft and destination."><strong>Aviación privada</strong> (VJT 100–499): viajes privados y ejecutivos con total libertad de elección de aeronave y destino.</li>
         <li data-es="<strong>Operaciones de carga</strong> (VJT 500–899): transporte de carga entre centros logísticos e industriales." data-en="<strong>Cargo Operations</strong> (VJT 500–899): cargo transportation between logistics and industrial centers."><strong>Operaciones de carga</strong> (VJT 500–899): transporte de carga entre centros logísticos e industriales.</li>
         <li data-es="<strong>Operaciones chárter</strong> (VJT 900–999): vuelos de pasajeros contratados para una misión o necesidad concreta." data-en="<strong>Charter Operations</strong> (VJT 900–999): passenger flights chartered for a specific mission or requirement."><strong>Operaciones chárter</strong> (VJT 900–999): vuelos de pasajeros contratados para una misión o necesidad concreta.</li>
@@ -325,6 +328,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
         </div>
       </div>
       <h3 data-es="¿Te interesa unirte al staff?" data-en="Interested in joining the staff?">¿Te interesa unirte al staff?</h3>
+      <p><a class="btn primary" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" data-es="Únete a VJG" data-en="Join VJG">Únete a VJG</a></p>
       <p data-es="Si deseas ocupar alguna de las posiciones vacantes, envía tu solicitud indicando el cargo que te interesa." data-en="If you wish to occupy one of the vacant positions, send your application indicating the role you are interested in.">Si deseas ocupar alguna de las posiciones vacantes, envía tu solicitud indicando el cargo que te interesa.</p>
       <p data-es="Mensaje de ejemplo:<br>Hola, me interesa la posición de [Nombre del cargo].<br>Mi usuario de Infinite Flight: @______<br>Motivo / experiencia breve:" data-en="Example message:<br>Hello, I am interested in the position of [Role name].<br>My Infinite Flight username: @______<br>Reason / brief experience:">Mensaje de ejemplo:<br>Hola, me interesa la posición de [Nombre del cargo].<br>Mi usuario de Infinite Flight: @______<br>Motivo / experiencia breve:</p>
     </section>
@@ -428,26 +432,32 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
     </section>
   </div>
 
-  <div id="view-routes" class="view">
+    <div id="view-routes" class="view">
     <section class="section">
-      <div class="eyebrow" data-es="RUTAS" data-en="ROUTES">RUTAS</div>
-      <h2 data-es="Rutas" data-en="Routes">Rutas</h2>
-      <p class="lead" data-es="VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora." data-en="VistaJet Group operates a flexible point-to-point model. This map shows routes flown according to flights registered in the logbook.">VistaJet Group opera con un modelo flexible punto a punto. En este mapa se muestran las rutas voladas según los vuelos registrados en la bitácora.</p>
-      <div id="routesMap" style="height:55vh;min-height:280px;max-height:520px;width:100%;border-radius:12px;margin-top:16px;background:#111"></div>
-      <p id="routesStatus" style="color:var(--muted);font-size:14px;margin-top:12px">Cargando rutas...</p>
+      <div class="eyebrow">RUTAS</div>
+      <h2 data-es="Nuestras rutas" data-en="Our routes">Nuestras rutas</h2>
+      <p class="lead" data-es="VistaJet Group Virtual opera como aerolínea internacional con un modelo flexible punto a punto. Conectamos destinos en América, Europa, Asia y Oceanía mediante aviación privada, operaciones de carga y vuelos chárter, sin depender de rutas fijas." data-en="VistaJet Group Virtual operates as an international airline with a flexible point-to-point model. We connect destinations in the Americas, Europe, Asia, and Oceania through private aviation, cargo operations, and charter flights, without depending on fixed routes.">VistaJet Group Virtual opera como aerolínea internacional con un modelo flexible punto a punto. Conectamos destinos en América, Europa, Asia y Oceanía mediante aviación privada, operaciones de carga y vuelos chárter, sin depender de rutas fijas.</p>
     </section>
   </div>
 
   <div id="view-hubs" class="view">
     <section class="section">
-      <div class="eyebrow">04 · <span data-es="HUBS" data-en="HUBS">HUBS</span></div>
-      <h2>VJG Hubs</h2>
-      <p class="lead" data-es="MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes." data-en="MMLO is the headquarters and primary hub. MMQT is the alternative for large aircraft.">MMLO es la sede y el hub principal. MMQT es la alternativa para aeronaves grandes.</p>
-      <div class="hub-grid" id="hubsContent"></div>
+      <div class="eyebrow">HUBS</div>
+      <h2 data-es="Nuestros hubs" data-en="Our hubs">Nuestros hubs</h2>
+      <p class="lead" data-es="MMLO es la sede y el hub principal. MMMX es la alternativa para aeronaves grandes." data-en="MMLO is the headquarters and primary hub. MMMX is the alternative for large aircraft.">MMLO es la sede y el hub principal. MMMX es la alternativa para aeronaves grandes.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
+        <span style="background:#1e1e1e;border:1px solid var(--red);padding:8px 16px;border-radius:20px;font-size:14px">MMLO · México</span>
+        <span style="background:#1e1e1e;border:1px solid #444;padding:8px 16px;border-radius:20px;font-size:14px">MMMX · México</span>
+        <span style="background:#1e1e1e;border:1px solid #444;padding:8px 16px;border-radius:20px;font-size:14px">KLAX · Los Ángeles</span>
+        <span style="background:#1e1e1e;border:1px solid #444;padding:8px 16px;border-radius:20px;font-size:14px">EGLL · Londres</span>
+        <span style="background:#1e1e1e;border:1px solid #444;padding:8px 16px;border-radius:20px;font-size:14px">WSSS · Singapur</span>
+        <span style="background:#1e1e1e;border:1px solid #444;padding:8px 16px;border-radius:20px;font-size:14px">VHHH · Hong Kong</span>
+        <span style="background:#1e1e1e;border:1px solid #444;padding:8px 16px;border-radius:20px;font-size:14px">YSSY · Sídney</span>
+      </div>
     </section>
   </div>
 
-  <div id="view-ranks" class="view">
+<div id="view-ranks" class="view">
     <section class="section">
       <div class="eyebrow" data-es="RANGOS" data-en="RANKS">RANGOS</div>
       <h2 data-es="Rangos de piloto" data-en="Pilot Ranks">Rangos de piloto</h2>
