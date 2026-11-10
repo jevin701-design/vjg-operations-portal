@@ -1509,7 +1509,9 @@ const _originalShowView = showView;
 showView = function(name) {
   _originalShowView(name);
   if (name === 'routes') setTimeout(loadRoutesMap, 150);
+  if (name === 'fleet') loadAgent();
 };
+if (document.getElementById('view-fleet')?.classList.contains('active')) loadAgent();
 
 </script>
 </body>
