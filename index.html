@@ -690,7 +690,7 @@ function showView(name) {
   if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
   if (name === 'fleet') {
     loadAgent();
-    agentTimer = setInterval(loadAgent, 5000);
+    agentTimer = setInterval(loadAgent, 30000);
   }
   window.addEventListener('resize', () => {
     if (document.getElementById('view-fleet')?.classList.contains('active')) loadAgent();
@@ -1229,7 +1229,7 @@ async function loadAgent() {
       headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
     });
     if (acRes.status === 429) {
-      setTimeout(loadAgent, 8000);
+      setTimeout(loadAgent, 20000);
       return;
     }
     if (!acRes.ok) return;
