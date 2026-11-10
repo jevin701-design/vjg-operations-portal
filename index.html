@@ -1230,16 +1230,35 @@ async function loadAgent() {
         const posData = await posRes.json();
         pos = posData.result || null;
       } catch(e) {}
-      // Estimate position if stale and airborne
+      // Estimate position along flight plan if stale
       if (pos && pos.updatedAt && !pos.isOnGround && pos.speed > 50) {
         const ageMs = Date.now() - new Date(pos.updatedAt).getTime();
         if (ageMs > 60000) {
-          const hours = ageMs / 3600000;
-          const distNm = pos.speed * hours;
-          const distDeg = distNm / 60;
-          const hdgRad = (pos.heading || 0) * Math.PI / 180;
-          pos.latitude += distDeg * Math.cos(hdgRad);
-          pos.longitude += distDeg * Math.sin(hdgRad) / Math.cos(pos.latitude * Math.PI / 180);
+          try {
+            const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/schedules`, {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            const schData = await schRes.json();
+            const sch = (schData.result || []).find(s => s.flightPlan);
+            if (sch && sch.flightPlan) {
+              const wps = sch.flightPlan.split(/\s+/).filter(w => w.length >= 3);
+              if (wps.length >= 2) {
+                const hours = ageMs / 3600000;
+                const distNm = pos.speed * hours;
+                const progress = Math.min(0.95, distNm / 500);
+                const idx = Math.floor(progress * (wps.length - 1));
+                pos._estWp = wps[Math.min(idx, wps.length - 1)];
+              }
+            }
+          } catch(e) {}
+          if (!pos._estWp) {
+            const hours = ageMs / 3600000;
+            const distNm = pos.speed * hours;
+            const distDeg = distNm / 60;
+            const hdgRad = (pos.heading || 0) * Math.PI / 180;
+            pos.latitude += distDeg * Math.cos(hdgRad);
+            pos.longitude += distDeg * Math.sin(hdgRad) / Math.cos(pos.latitude * Math.PI / 180);
+          }
         }
       }
       const alt = pos?.altitude || 0;
@@ -1261,7 +1280,8 @@ async function loadAgent() {
           });
           const geo = await geoRes.json();
           const country = geo.address?.country || '—';
-          if (country !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + country;
+          if (pos._estWp) place = 'Hacia ' + pos._estWp;
+          else if (country !== '—') place = (onGround ? 'En ' : 'Sobrevolando ') + country;
         } catch(e) {}
       }
       let eta = '—';
