@@ -688,7 +688,7 @@ function showView(name) {
   if (agentTimer) { clearInterval(agentTimer); agentTimer = null; }
   if (name === 'fleet') {
     loadAgent();
-    agentTimer = setInterval(loadAgent, 25000);
+    agentTimer = setInterval(loadAgent, 15000);
   }
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   const link = document.querySelector(`nav a[data-view="${name}"]`);
@@ -1257,8 +1257,8 @@ async function loadAgent() {
       await new Promise(r => setTimeout(r, 300));
       let pos = null;
       try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
-          headers: { Authorization: 'Bearer ' + token }
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?t=${Date.now()}`, {
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
@@ -1278,8 +1278,8 @@ async function loadAgent() {
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
-            headers: { 'User-Agent': 'VJG-Portal/1.0' }
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5&t=${Date.now()}`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0', 'Cache-Control': 'no-cache' }
           });
           const geo = await geoRes.json();
           const addr = geo.address || {};
@@ -1381,8 +1381,8 @@ async function loadAgent() {
       await new Promise(r => setTimeout(r, 300));
       let pos = null;
       try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
-          headers: { Authorization: 'Bearer ' + token }
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?t=${Date.now()}`, {
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
@@ -1402,8 +1402,8 @@ async function loadAgent() {
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
-            headers: { 'User-Agent': 'VJG-Portal/1.0' }
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5&t=${Date.now()}`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0', 'Cache-Control': 'no-cache' }
           });
           const geo = await geoRes.json();
           const addr = geo.address || {};
@@ -1568,8 +1568,8 @@ async function loadAgent() {
       await new Promise(r => setTimeout(r, 300));
       let pos = null;
       try {
-        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position`, {
-          headers: { Authorization: 'Bearer ' + token }
+        const posRes = await fetch(`https://api.infiniteflight.com/public/v3/live/aircraft/${ac.id}/position?t=${Date.now()}`, {
+          headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
         });
         const posData = await posRes.json();
         pos = posData.result || null;
@@ -1589,8 +1589,8 @@ async function loadAgent() {
       let place = '—';
       if (pos && pos.latitude && pos.longitude) {
         try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5`, {
-            headers: { 'User-Agent': 'VJG-Portal/1.0' }
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json&zoom=5&t=${Date.now()}`, {
+            headers: { 'User-Agent': 'VJG-Portal/1.0', 'Cache-Control': 'no-cache' }
           });
           const geo = await geoRes.json();
           const addr = geo.address || {};
