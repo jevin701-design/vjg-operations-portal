@@ -1788,39 +1788,32 @@ async function loadRoutesMap() {
 
   statusEl.textContent = '';
 
+  const token = localStorage.getItem('if_access_token');
   let routes = [];
 
-  // Always try Supabase first (public)
-  const { data: flights, error } = await sb.from('flights').select('flight_number, origin, destination, registration, category').limit(300);
-  if (!error && flights && flights.length > 0) {
-    routes = flights.filter(f => f.origin && f.destination && f.origin !== f.destination);
-  }
-
-  // If no Supabase data and user is connected to IF, try IF API
-  if (routes.length === 0) {
-    const token = localStorage.getItem('if_access_token');
-    if (token) {
-      try {
-        const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        if (schRes.ok) {
-          const schData = await schRes.json();
-          const schedules = schData.result || [];
-          routes = schedules
-            .filter(s => s.originIcao && s.destinationIcao && s.originIcao !== s.destinationIcao)
-            .map(s => ({
-              origin: s.originIcao,
-              destination: s.destinationIcao,
-              flight_number: s.flightNumber || 'VJT'
-            }));
-        }
-      } catch (e) {}
+  if (token) {
+    try {
+      const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (schRes.ok) {
+        const schData = await schRes.json();
+        const schedules = schData.result || [];
+        routes = schedules
+          .filter(s => s.originIcao && s.destinationIcao && s.originIcao !== s.destinationIcao)
+          .map(s => ({
+            origin: s.originIcao,
+            destination: s.destinationIcao,
+            flight_number: s.flightNumber || 'VJT'
+          }));
+      }
+    } catch (e) {
+      console.warn('IF error', e);
     }
   }
 
   if (routes.length === 0) {
-    statusEl.textContent = '';
+    statusEl.textContent = token ? '' : '';
     return;
   }
 
@@ -1831,14 +1824,14 @@ async function loadRoutesMap() {
       const dest = await getAirportCoords(r.destination);
       if (orig && dest) {
         L.polyline([orig, dest], { color: '#e11d48', weight: 2, opacity: 0.8 })
-          .bindPopup(`<b>${r.flight_number || 'VJT'}</b><br>${r.origin} → ${r.destination}`)
+          .bindPopup(`<b>${r.flight_number}</b><br>${r.origin} → ${r.destination}`)
           .addTo(routesMap);
         drawn++;
       }
     } catch (e) {}
   }
 
-  statusEl.textContent = drawn > 0 ? `${drawn} rutas` : '';
+  statusEl.textContent = drawn > 0 ? drawn + ' rutas' : '';
 }
 // Hook into showView
 const _originalShowView = showView;
