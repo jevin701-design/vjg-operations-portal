@@ -1363,6 +1363,31 @@ async function loadBitacora() {
       } catch(e) {}
     }
 
+    if (allFlights.length === 0) {
+      try {
+        const schRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/schedules`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const schData = await schRes.json();
+        for (const s of (schData.result || [])) {
+          const ac = aircraftList.find(a => a.id === s.aircraftId);
+          if (!ac) continue;
+          const reg = ac.registration || '—';
+          const db = dbMap[reg.toUpperCase()] || {};
+          allFlights.push({
+            date: s.actualDepartureUtc || s.scheduledDepartureUtc,
+            avion: db.model || db.manufacturer || '—',
+            registration: reg,
+            origin: s.originIcao || '?',
+            dest: s.destinationIcao || '…',
+            usage: db.usage_type || '—',
+            statusText: s.actualArrivalUtc ? 'Completado' : 'EN VUELO',
+            pilot: (s.crew && s.crew.length) ? s.crew.map(c => c.username).join(', ') : '—',
+            isActive: !s.actualArrivalUtc
+          });
+        }
+      } catch(e) {}
+    }
     allFlights.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     ifFlightsCache = allFlights;
     ifDebug.textContent = allFlights.length + ' vuelos de ' + aircraftList.length + ' aeronaves';
