@@ -305,10 +305,12 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
         <div class="card">
           <h3>COO — Chief Operating Officer</h3>
           <p data-es="Estado: Vacante<br>Responsable de las operaciones del día a día y de que todo funcione de forma fluida." data-en="Status: Vacant<br>Responsible for day-to-day operations and ensuring everything runs smoothly.">Estado: Vacante<br>Responsable de las operaciones del día a día y de que todo funcione de forma fluida.</p>
+          <a class="btn" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" style="margin-top:8px;display:inline-block">Aplicar</a>
         </div>
         <div class="card">
           <h3>Head of Internal Affairs</h3>
           <p data-es="Estado: Vacante<br>Gestiona a los miembros y propone mejoras en el sistema de rangos y formación." data-en="Status: Vacant<br>Manages members and proposes improvements to the ranks and training system.">Estado: Vacante<br>Gestiona a los miembros y propone mejoras en el sistema de rangos y formación.</p>
+          <a class="btn" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" style="margin-top:8px;display:inline-block">Aplicar</a>
         </div>
         <div class="card">
           <h3>HR Manager</h3>
@@ -325,6 +327,7 @@ footer { padding: 40px 32px; border-top: 1px solid #222; color: #888; font-size:
         <div class="card">
           <h3>Head of Public Relations</h3>
           <p data-es="Estado: Vacante<br>Mantiene la imagen profesional de la VA y actualiza el sitio y los anuncios." data-en="Status: Vacant<br>Maintains the professional image of the VA and updates the site and announcements.">Estado: Vacante<br>Mantiene la imagen profesional de la VA y actualiza el sitio y los anuncios.</p>
+          <a class="btn" href="https://live.infiniteflight.com/organization/211f692c-6099-4289-ae6e-4d137880d976" target="_blank" style="margin-top:8px;display:inline-block">Aplicar</a>
         </div>
       </div>
         </section>
@@ -1221,6 +1224,15 @@ async function loadAgent() {
   if (!body) return;
   const token = localStorage.getItem('if_access_token');
   if (!token) return;
+  try {
+    const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft?_=${Date.now()}`, {
+      headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+    });
+    if (acRes.status === 429) {
+      setTimeout(loadAgent, 8000);
+      return;
+    }
+    if (!acRes.ok) return;
   try {
     const acRes = await fetch(`https://api.infiniteflight.com/public/v3/live/organizations/${VJG_ORG_ID}/aircraft?_=${Date.now()}`, {
       headers: { Authorization: 'Bearer ' + token, 'Cache-Control': 'no-cache' }
